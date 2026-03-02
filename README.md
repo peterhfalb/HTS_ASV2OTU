@@ -18,6 +18,27 @@ it is set up in the pipeline. Make sure that the structure of the ASV table is c
 
 ## Step 2 - Script: 02_parallell_ITSx_fungi.txt
 
+First set up a virtual environment on your computing cluster. For UM-MSI, ssh into your account from terminal and run the following commands to set up the environment:
+
+```bash
+# Load conda (adjust module name to match your cluster)
+module load conda
+
+# Create environment and install ITSx from bioconda
+conda create -n itsx_env -c bioconda -c conda-forge itsx
+
+# Activate it
+conda activate itsx_env
+
+# Load VSEARCH as a module on top of the conda environment
+module load vsearch
+
+# Verify both work
+ITSx --help
+vsearch --version
+```
+
+
 This is formulated as a shell script for queueing in an HPC cluster (slurm) 
 Adapt the queueing parameters to whatever system you are running
 Script requires two dependencies, VSEARCH and ITSx. 
