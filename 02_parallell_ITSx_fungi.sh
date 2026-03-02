@@ -1,18 +1,24 @@
 #!/bin/bash
+#SBATCH --job-name=ITSx_INSERTJOBNAMEHERE
+#SBATCH --time=12:00:00
+#SBATCH --nodes=1  # specify one node
+#SBATCH --ntasks=1           
+#SBATCH --cpus-per-task=40 
+#SBATCH --mem-per-cpu=5G 
 
-#SBATCH --account=
-#SBATCH --job-name=ITSx
-#SBATCH --time=1-0:0:0
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
-#SBATCH --mem-per-cpu=5G
+#SBATCH -p msismall
 
+#SBATCH --mail-type=BEGIN,END,FAIL  
+#SBATCH --mail-user=INSERTEMAILHERE
 
-module purge 
-module load Anaconda3/2022.10
-source activate [PATH TO CONDA ENVIRONMENT]/conda/itsx
+module purge
+module load conda
 
-module load VSEARCH/2.22.1-GCC-11.3.0
+source /common/software/install/migrated/anaconda/python3-2020.07-mamba/etc/profile.d/conda.sh
+
+conda activate itsx_env
+
+module load vsearch
 
 # SETTING VARIABLES
 VSEARCH=$(which vsearch)

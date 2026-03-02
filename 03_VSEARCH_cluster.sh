@@ -1,11 +1,15 @@
 #!/bin/bash
+#SBATCH --job-name=VSEARCH_INSERTJOBNAMEHERE
+#SBATCH --time=2:00:00
+#SBATCH --nodes=1  # specify one node
+#SBATCH --ntasks=1           
+#SBATCH --cpus-per-task=10 
+#SBATCH --mem-per-cpu=5G 
 
-#SBATCH --account=
-#SBATCH --job-name=VSEARCH
-#SBATCH --time=1:0:0
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
-#SBATCH --mem-per-cpu=5G
+#SBATCH -p msismall
+
+#SBATCH --mail-type=BEGIN,END,FAIL  
+#SBATCH --mail-user=INSERTEMAILHERE
 
 module purge
 
@@ -23,7 +27,7 @@ TMP_FASTA5=$(mktemp)
 TMP_FASTA7=$(mktemp)
 
 #rename fasta headers in single files
-ml Perl/5.36.0-GCCcore-12.2.0
+ml perl/5.36.0-gcc-8.2.0-uuoo54n
 
 cat S[0-9][0-9][0-9].fas >> "${TMP_FASTA7}"
 perl /back_ground_scripts/rename.pl
@@ -32,7 +36,7 @@ rm renamed*.fas
 
 ml purge
 
-ml VSEARCH/2.22.1-GCC-11.3.0
+ml vsearch
 # Dereplicate (vsearch)
 "${VSEARCH}" --derep_fulllength "${TMP_FASTA7}" \
              --sizein \
@@ -103,7 +107,7 @@ sed -i 's/	S8/	barcodelabel=S8/g' $PROJ.uc
 sed -i 's/	S9/	barcodelabel=S9/g' $PROJ.uc
 
 #make table
-ml Python/3.10.8-GCCcore-12.2.0
+ml python/3.10.10-gcc-8.2.0-sanagub
 python /back_ground_scripts/uc2otutab_original.py $PROJ.uc > $PROJ.otutable
 
 rm -f $PROJ.uc "${TMP_FASTA1}" "${TMP_FASTQ2}" "${TMP_FASTQ3}" "${TMP_FASTQ4}" "${TMP_FASTQ5}" "${TMP_FASTQ7}"

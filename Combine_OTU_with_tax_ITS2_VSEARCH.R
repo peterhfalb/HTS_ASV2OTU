@@ -1,3 +1,4 @@
+install.packages("tidyverse")
 library(tidyverse)
 
 OTU <- read.table("Coryolis_OTU_table_mumu_curated.txt", header = T)
