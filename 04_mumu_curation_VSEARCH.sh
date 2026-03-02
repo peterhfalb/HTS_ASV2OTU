@@ -15,40 +15,44 @@
 # source: https://github.com/frederic-mahe/mumu
 
 module purge
-ml blast-plus/2.13.0-gcc-8.2.0-vo4mr4d 
+ml blast-plus/2.13.0-gcc-8.2.0-vo4mr4d
 
+cd /YOURWORKINGDIRECTORY/
 
-# Use the centroid file with this extension from the SWARM output as it contains the swarm centroids
-cp [INSERT PROJECT NAME].centroids OTU_centroids
+# SETTING VARIABLES - this NEEDS to be the same as script 2
+PROJ="COOL_PROJECT_NAME"
 
+# Use the centroid file from the VSEARCH output
+cp ${PROJ}.centroids OTU_centroids
 
-# Fix the headers to only contain the sequence ID from dada2 and nothing else
+# Fix the headers to only contain the sequence ID and nothing else
 sed -i 's/;.*//' OTU_centroids
-
 
 # Use the centroid file to make a blast database for internal matching
 makeblastdb -in OTU_centroids -parse_seqids -dbtype nucl
 
+# Blast all sequences against eachother to create the match.list
+blastn -db OTU_centroids \
+       -outfmt '6 qseqid sseqid pident' \
+       -out match_list.txt \
+       -qcov_hsp_perc 80 \
+       -perc_identity 84 \
+       -num_threads 16 \
+       -query OTU_centroids
 
-# Blast all sequences against eachother to create the match.list which is one of the parameters for mumu-curation 
-blastn -db OTU_centroids -outfmt '6 qseqid sseqid pident' -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -num_threads 16 -query OTU_centroids
-
-# Clean up the amplicon names before mumu 
-
-cp [INSERT PROJECT NAME].otutable pre_mumu_table.txt
+# Clean up the amplicon names before mumu
+cp ${PROJ}.otutable pre_mumu_table.txt
 
 awk 'BEGIN{FS=OFS="\t"} {sub(/;.*/, "", $1); print}' pre_mumu_table.txt > mumu_table.txt
 
 rm pre_mumu_table.txt
 
-# This runs the mumu curation, output file will be matched with the data from SWARM output
+# Run mumu curation
 ~/packages/mumu/mumu \
-		--otu_table mumu_table.txt \
-		--match_list match_list.txt \
-		--log mumu.log \
-		--new_otu_table [INSERT PROJECT NAME]_mumu_curated.txt
-
+        --otu_table mumu_table.txt \
+        --match_list match_list.txt \
+        --log mumu.log \
+        --new_otu_table ${PROJ}_mumu_curated.txt
 
 # Generate a new centroid file from the mumu_curated table for taxonomic annotation
-grep -A 1 -Ff <(awk '{print $1}' [INSERT PROJECT NAME]_mumu_curated.txt) OTU_centroids | sed '/--/d' > Centroid_mumu_curated.fas
-
+grep -A 1 -Ff <(awk 'NR>1 {print $1}' ${PROJ}_mumu_curated.txt) OTU_centroids | sed '/--/d' > Centroid_mumu_curated.fas

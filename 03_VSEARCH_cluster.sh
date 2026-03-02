@@ -13,6 +13,8 @@
 
 module purge
 
+cd /YOURWORKINGDIRECTORY/ #make sure to change this according to your system
+
 #SETTING VARIABLES
 VSEARCH=vsearch
 THREADS=10
@@ -30,13 +32,13 @@ TMP_FASTA7=$(mktemp)
 ml perl/5.36.0-gcc-8.2.0-uuoo54n
 
 cat S[0-9][0-9][0-9].fas >> "${TMP_FASTA7}"
-perl /back_ground_scripts/rename.pl
+perl back_ground_scripts/rename.pl
 cat renamed*.fas > "${TMP_FASTA1}"
 rm renamed*.fas
 
 ml purge
 
-ml vsearch
+ml vsearch/2.3.4
 # Dereplicate (vsearch)
 "${VSEARCH}" --derep_fulllength "${TMP_FASTA7}" \
              --sizein \
@@ -45,7 +47,7 @@ ml vsearch
              --fasta_width 0 \
              --relabel_sha1 \
 	     --minuniquesize ${LOW_ABUND_SAMPLE} \
-	     --sizein -sizeout \
+	     --sizein --sizeout \
              --threads ${THREADS} \
              --output "${TMP_FASTA2}" > /dev/null
 
@@ -107,7 +109,7 @@ sed -i 's/	S8/	barcodelabel=S8/g' $PROJ.uc
 sed -i 's/	S9/	barcodelabel=S9/g' $PROJ.uc
 
 #make table
-ml python/3.10.10-gcc-8.2.0-sanagub
-python /back_ground_scripts/uc2otutab_original.py $PROJ.uc > $PROJ.otutable
+ml python/3.10.9_anaconda2023.03_libmamba
+python back_ground_scripts/uc2otutab_original.py $PROJ.uc > $PROJ.otutable
 
-rm -f $PROJ.uc "${TMP_FASTA1}" "${TMP_FASTQ2}" "${TMP_FASTQ3}" "${TMP_FASTQ4}" "${TMP_FASTQ5}" "${TMP_FASTQ7}"
+rm -f $PROJ.uc "${TMP_FASTA1}" "${TMP_FASTA2}" "${TMP_FASTA3}" "${TMP_FASTA4}" "${TMP_FASTA5}" "${TMP_FASTA7}"

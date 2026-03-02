@@ -3,13 +3,15 @@
 #SBATCH --time=01:00:00
 #SBATCH --nodes=1  # specify one node
 #SBATCH --ntasks=1           
-#SBATCH --cpus-per-task=4 
+#SBATCH --cpus-per-task=2
 #SBATCH --mem-per-cpu=4G 
 
 #SBATCH -p msismall
 
 #SBATCH --mail-type=BEGIN,END,FAIL  
 #SBATCH --mail-user=INSERTEMAILHERE
+
+cd /YOURWORKINGDIRECTORY/ #make sure to change this according to your system
 
 ## Set up job environment:
 set -o errexit  # Exit the script on any error

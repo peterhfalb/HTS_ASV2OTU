@@ -1,7 +1,7 @@
 install.packages("tidyverse")
 library(tidyverse)
 
-OTU <- read.table("Coryolis_OTU_table_mumu_curated.txt", header = T)
+OTU <- read.table("FAB2_2022_ITS_mumu_curated.txt", header = T)
 
 Tax_raw <- read.table("Taxonomy_sintax_ITS2.txt", fill = T)
 
@@ -40,6 +40,6 @@ Tax <- cbind(Tax1, Tax2, Tax3)
 
 OTU_with_taxonomy <- left_join(OTU, Tax, by = "OTUId")
 
-write.table(OTU_with_taxonomy, "Coryolis_OTU_with_taxonomy_ITS2.txt", sep = "\t", quote = F, row.names = F)
+write.table(OTU_with_taxonomy, "FAB2_ITS_OTU_with_taxonomy_ITS2.txt", sep = "\t", quote = F, row.names = F)
 
 

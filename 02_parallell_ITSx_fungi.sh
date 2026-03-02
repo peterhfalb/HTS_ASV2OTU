@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ITSx_INSERTJOBNAMEHERE
-#SBATCH --time=12:00:00
+#SBATCH --time=00:30:00
 #SBATCH --nodes=1  # specify one node
 #SBATCH --ntasks=1           
 #SBATCH --cpus-per-task=40 
@@ -11,6 +11,8 @@
 #SBATCH --mail-type=BEGIN,END,FAIL  
 #SBATCH --mail-user=INSERTEMAILHERE
 
+set -e  # stop immediately on any error
+
 module purge
 module load conda
 
@@ -20,38 +22,38 @@ conda activate itsx_env
 
 module load vsearch
 
+cd YOURWORKINGDIRECTORY
+
 # SETTING VARIABLES
 VSEARCH=$(which vsearch)
 SPLITS=40
-mkdir uncut_fasta
-
-TMP_FASTA1=$(mktemp)
-
+mkdir -p uncut_fasta  # -p prevents error if directory already exists
 
 for FILE in `ls S[0-9][0-9][0-9].fas` ; do
 
-        cat "${FILE}" > uncut_fasta/"${FILE}"
+    TMP_FASTA1=$(mktemp)  # moved inside loop
 
-        faSplit sequence "${FILE}" $SPLITS splitted
+    cat "${FILE}" > uncut_fasta/"${FILE}"
 
-        for f in `ls splitted*` ; do
-                ITSx -i $f --complement F -t F --preserve T -o $f.out &
-        done
+    faSplit sequence "${FILE}" $SPLITS splitted
 
-        wait
+    for f in `ls splitted*` ; do
+        ITSx -i $f --complement F -t F --preserve T -o $f.out &
+    done
 
-        cat splitted*ITS2.fasta >> "${TMP_FASTA1}"
+    wait
 
-        rm splitted*
+    cat splitted*ITS2.fasta >> "${TMP_FASTA1}"
 
-        # Dereplicate (vsearch)
-        "${VSEARCH}" --derep_fulllength "${TMP_FASTA1}" \
-             --sizein \
-             --sizeout \
-             --fasta_width 0 \
-             --minuniquesize 1 \
-             --relabel_sha1 \
-             --output "${FILE}" > /dev/null
+    rm splitted*
 
-rm "${TMP_FASTA1}"
-done 
+    "${VSEARCH}" --derep_fulllength "${TMP_FASTA1}" \
+         --sizein \
+         --sizeout \
+         --fasta_width 0 \
+         --minuniquesize 1 \
+         --relabel_sha1 \
+         --output "${FILE}" > /dev/null
+
+    rm "${TMP_FASTA1}"
+done
