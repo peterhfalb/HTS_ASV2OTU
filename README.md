@@ -1,22 +1,12 @@
 
 ### Pipeline for post-processing DADA2 output 
 ### Zazzy Metabarcoding Pipeline by Luis Morgado, University of Oslo
-### Updated by Eivind Kverme Ronold, University of Oslo
-### 
+
 ### September, 2024
 
-### Inside this folder is all the scripts and data necessary to run the pipeline on 
-### an ASV table. ASV table included is from the Coryolis project, Kennedy lab.
-### ASV-table used is called: Coryolus_combined_sequences_taxa.txt
+Inside this folder is all the scripts and data necessary to run the pipeline on an ASV table. ASV table included is from the Coryolis project, Kennedy lab. ASV-table used is called: Coryolus_combined_sequences_taxa.txt
 
-### NOTE: This is a pipeline designed for an HPC cluster
-### located and operated in Norway. Your local architecture
-### and software availability may differ. Check all scripts
-### for software and environments that are loaded, such as
-### Anaconda environments used for calling certain perl/python 
-### scripts. You will also have to set up your own local ITSx
-### environment (unless your HPC cluster has it installed) and
-### download and install mumu locally. 
+NOTE: This is a pipeline designed for an HPC cluster located and operated in Norway. Your local architecture and software availability may differ. Check all scripts for software and environments that are loaded, such as Anaconda environments used for calling certain perl/python  scripts. You will also have to set up your own local ITSx environment (unless your HPC cluster has it installed) and download and install mumu locally. 
 
 ### NOTE 2: Original pipeline handles sequences directly from multiplexed libraries 
 ### from the sequencing centre and demultiplexes, cleans and runs DADA2. This is a 
