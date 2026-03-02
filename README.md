@@ -61,6 +61,10 @@ Usually completes in a few minutes on an HPC cluster with default settings.
 
 First, you need to clone mumu on your system. On terminal navigate to the directory where you want the package. Then clone the repository:
 ```bash
+cd ~
+mkdir packages # ONLY if this folder doesn't exist yet.
+cd packages
+
 ml gcc/13.1.0-5z64cho
 git clone https://github.com/frederic-mahe/mumu.git
 cd ./mumu/
