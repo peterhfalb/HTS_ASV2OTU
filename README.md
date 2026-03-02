@@ -59,7 +59,16 @@ Usually completes in a few minutes on an HPC cluster with default settings.
 
 ## STEP 4 - Script: 04_mumu_curation_VSEARCH.txt
 
-*mums* is a post-clustering clean up algorithm that is supposed to find rare variantssequences of common sequences that leak through the clustering steps.
+First, you need to clone mumu on your system. On terminal navigate to the directory where you want the package. Then clone the repository:
+```bash
+ml gcc/13.1.0-5z64cho
+git clone https://github.com/frederic-mahe/mumu.git
+cd ./mumu/
+make
+make check
+#make install  # SKIP THIS unless you have sudo permissions on your device. You will just reference the binary in the SLURM call.
+```
+*mumu* is a post-clustering clean up algorithm that is supposed to find rare variantssequences of common sequences that leak through the clustering steps.
 It works in two steps. 
 *First*, all sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also show a very similar occurrence pattern, is is merged with this "parent" sequence. Mostly used to clean up singleton and doubleton sequences. 
 *mums* is a unix version of lulu, with some optimisation to run faster. In the script you are required to set the path to your folder with mumu installed. Also set the name of the input files to exactly match the output from VSEARCH. This script outputs a new centroid and a new OTU table. VSEARCH outputs are not deleted in case you want to compare. 
