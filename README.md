@@ -18,6 +18,27 @@ it is set up in the pipeline. Make sure that the structure of the ASV table is c
 
 ## Step 2 - Script: 02_parallell_ITSx_fungi.txt
 
+First set up a virtual environment on your computing cluster. For UM-MSI, ssh into your account from terminal and run the following commands to set up the environment:
+
+```bash
+# Load conda (adjust module name to match your cluster)
+module load conda
+
+# Create environment and install ITSx from bioconda
+conda create -n itsx_env -c bioconda -c conda-forge itsx
+
+# Activate it
+conda activate itsx_env
+
+# Load VSEARCH as a module on top of the conda environment
+module load vsearch
+
+# Verify both work
+ITSx --help
+vsearch --version
+```
+
+
 This is formulated as a shell script for queueing in an HPC cluster (slurm) 
 Adapt the queueing parameters to whatever system you are running
 Script requires two dependencies, VSEARCH and ITSx. 
@@ -38,7 +59,20 @@ Usually completes in a few minutes on an HPC cluster with default settings.
 
 ## STEP 4 - Script: 04_mumu_curation_VSEARCH.txt
 
-*mums* is a post-clustering clean up algorithm that is supposed to find rare variantssequences of common sequences that leak through the clustering steps.
+First, you need to clone mumu on your system. On terminal navigate to the directory where you want the package. Then clone the repository:
+```bash
+cd ~
+mkdir packages # ONLY if this folder doesn't exist yet.
+cd packages
+
+ml gcc/13.1.0-5z64cho
+git clone https://github.com/frederic-mahe/mumu.git
+cd ./mumu/
+make
+make check
+#make install  # SKIP THIS unless you have sudo permissions on your device. You will just reference the binary in the SLURM call.
+```
+*mumu* is a post-clustering clean up algorithm that is supposed to find rare variantssequences of common sequences that leak through the clustering steps.
 It works in two steps. 
 *First*, all sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also show a very similar occurrence pattern, is is merged with this "parent" sequence. Mostly used to clean up singleton and doubleton sequences. 
 *mums* is a unix version of lulu, with some optimisation to run faster. In the script you are required to set the path to your folder with mumu installed. Also set the name of the input files to exactly match the output from VSEARCH. This script outputs a new centroid and a new OTU table. VSEARCH outputs are not deleted in case you want to compare. 
