@@ -12,7 +12,7 @@ The original Zazzy pipeline created by Luis Morgado was designed to handle seque
 
 **Updated by Peter Falb, University of Minnesota for compatability at UM**
 
-## Setup Instructions:
+## Installation Instructions:
 
 Login in to MSI via terminal on your mac (usage might be different on Windows, see https://msi.umn.edu/connecting/connecting-to-hpc-resources):
 
@@ -47,7 +47,7 @@ This script does 3 things, *FIRST* it updates the path to reflect where the pipe
 
 After proper installation, the ASV to OTU pipeline should now be ready to go.
 
-## Usage Instructions
+## Usage Instructions:
 
 This script takes one input file - the ASV table outputted from Trevor Gould's DADA2 pipeline. This should be a table that has the ASVs as column one, sample abundances in the next columns, then taxonomy and taxonomy bootstrap values as final columns. To run the ASV to OTU pipeline, you will want to create a new project directory on the cluster, and then upload your ASV table. Then you will run the pipeline script.
 
@@ -89,7 +89,13 @@ To run the script, you need to ssh login to the cluster and go to the directory 
 
 **Navigate to directory of script then run the command**
 ```bash
+# login to the cluster (fill in your UMN username)
+ssh -Y yourMSIusername@agate.msi.umn.edu 
+
+# navigate to directory where you cloned the pipeline scripts
 cd path/to/pipelineCode/directory/
+
+# submit the slurm job with the following commands:
 sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx]
 
 # PRIMER SET OPTIONS:
@@ -107,6 +113,14 @@ sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_s
 
 **A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run the sbatch command, it submits the script as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a .out and .err file within the directory where the pipeline is stored. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
 
+After your job has started, you can watch its progress in real time using the following command:
+```bash
+# first ensure you are still in the pipeline script folder on MSI
+# then run:
+tail -f pipeline_*.out
+
+```
+
 ## Output Files:
 
 The ASV to OTU pipeline will output a LOT of files (see below for descriptions of all), but you will likely be most interested in two:
@@ -119,7 +133,7 @@ The *pipeline_run.log* also summarizes other files you may be interested in.
 ## Summary of main pipeline steps:
 
 ### Step 0 - ITSx (only relevant for ITS datasets)
- In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences.
+ In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences. This will likely take the longest of any step in the process, Somewhere between 5-20 minutes depending on the dataset.
 
 ### Step 1 - VSEARCH Clustering
 

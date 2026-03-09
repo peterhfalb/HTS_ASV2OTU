@@ -85,23 +85,28 @@ print(map)
 # Rename OTU table sample columns from bioinformatics IDs to original names
 # ------------------------------------------------------------------------------
 
-# First column of OTU table is the OTU ID, rest are S001, S002... sample columns
+# ------------------------------------------------------------------------------
+# Rename OTU table sample columns from bioinformatics IDs to original names
+# (only if columns are still in S001/S002 format)
+# ------------------------------------------------------------------------------
+
 otu_id_col  <- names(otu)[1]
 sample_cols <- names(otu)[-1]
 
-# Build rename lookup: S001 -> original sample name
-rename_map <- setNames(map$Sample_name, map$BioInf_Sample)
+# Check if renaming is needed (columns look like S001, S002...)
+needs_rename <- all(grepl("^S\\d{3}$", sample_cols))
 
-# Check all sample cols are in the map
-missing <- setdiff(sample_cols, names(rename_map))
-if (length(missing) > 0) {
-  warning("Some sample columns not found in Map_file.csv: ", paste(missing, collapse = ", "))
+if (needs_rename) {
+  rename_map <- setNames(map$Sample_name, map$BioInf_Sample)
+  missing <- setdiff(sample_cols, names(rename_map))
+  if (length(missing) > 0) {
+    warning("Some sample columns not found in Map_file.csv: ", paste(missing, collapse = ", "))
+  }
+  names(otu)[-1] <- rename_map[sample_cols]
+  cat("\nSample columns renamed to original names.\n")
+} else {
+  cat("\nSample columns already have original names, skipping rename.\n")
 }
-
-# Rename
-names(otu)[-1] <- rename_map[sample_cols]
-
-cat("\nSample columns renamed to original names.\n")
 
 # ------------------------------------------------------------------------------
 # Join OTU table with taxonomy
