@@ -1,17 +1,16 @@
-# SLURM-based pipeline for post-processing DADA2 ITS2 ASV output to denoised OTUs
+# SLURM-based pipeline for post-processing DADA2 ASV tables to denoised OTUs
 
-### Credit / Pipeline Citations
-**Zazzy Metabarcoding Pipeline created by Luis Morgado, University of Oslo**
-**Updated by Eivind Kverme Ronold, University of Oslo, September 2024**
-**Updated by Peter Falb, University of Minnesota for compatability at UM**
+### Pipeline Overview and Authors
 
 Full credit for the development of this pipeline goes to Eivind Ronold and Luis Morgado. I (PF) have updated and adapted all the scripts to work on University of Minnesota systems, as well as implemented various bug fixes and speed/code improvements. Individual scripts were consolidated into one pipeline script which compiles and installs all necessary packages for running the pipeline. The pipeline was also adapted to handle all types of sequencing data currently used in the Kennedy Lab (16S-V4, ITS1, ITS2, 18S-V4, 18S-AMF). 
 
 The original Zazzy pipeline created by Luis Morgado was designed to handle sequences directly from multiplexed libraries from sequencing centers, then clean an run DADA2. This is a truncated version adapted to take pre-DADA2 processed ASV files outputted from Trevor Gould's MSI pipeline. 
 
+**Zazzy Metabarcoding Pipeline created by Luis Morgado, University of Oslo**
 
+**Updated by Eivind Kverme Ronold, University of Oslo, September 2024**
 
-This repository has all the scripts necessary to run the pipeline on an ASV table. Clone the repository locally within your project directory, run the R script, then upload all files onto your cluster and run the SLURM scripts individually. Make sure to update the job names, email address, and working directories for your SLURM submissions.
+**Updated by Peter Falb, University of Minnesota for compatability at UM**
 
 ## Setup Instructions:
 
@@ -35,8 +34,12 @@ git clone https://github.com/peterhfalb/HTS_ASV2OTU.git
 
 To set up the pipeline script and packages move into the cloned repository and run the setup script:
 ```bash
-cd HTS_ASV2OTU/ #move into the cloned repository
-bash setup.sh # run this line to update the pipeline script and answer the prompt to enter your email for SLURM notifications
+# move into the cloned repository
+cd HTS_ASV2OTU/ 
+
+# run this line to update the pipeline script and
+# answer the prompt to enter your email for SLURM notifications
+bash setup.sh 
 ```
 This script does 3 things, *FIRST* it updates the path to reflect where the pipeline code is located on the cluster, *SECOND* it prompts you for your email, which will be used to send SLURM notifications when you run the script, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
 
@@ -50,14 +53,28 @@ This script takes one input file - the ASV table outputted from Trevor Gould's D
 
 **Step 1: Login to the cluster, and prepare files**
 ```bash
-ssh -Y yourMSIusername@agate.msi.umn.edu #login to the cluster (fill in your UMN username)
-cd yourPreferredDirectory/ #navigate to where you want your project to live
-mkdir yourProjectName_ASVtoOTU #create a directory for your project
-cd yourProjectName_ASVtoOTU #navigate into the new directory
-pwd #print and copy this path to the file directory
-exit # leave the ssh window
+# login to the cluster (fill in your UMN username)
+ssh -Y yourMSIusername@agate.msi.umn.edu 
+
+# navigate to where you want your project to live
+cd yourPreferredDirectory/ 
+
+# create a directory for your project
+mkdir yourProjectName_ASVtoOTU 
+
+# navigate into the new directory
+cd yourProjectName_ASVtoOTU 
+
+# print and copy this path to the file directory
+pwd 
+
+# leave the ssh window
+exit 
+
+# copy your ASV table from your local computer to your new project directory on the cluster
+# (fill in file paths and your UMN username)
 scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/yourProjectName_ASVtoOTU/ 
-#copy your ASV table from your local computer to your new project directory on the cluster (fill in file paths and your UMN username)
+
 ```
 
 **Step 2: Run the pipeline**
@@ -108,12 +125,12 @@ The *pipeline_run.log* also summarizes other files you may be interested in.
 
 This step uses the VSEARCH algorithm to cluster ASVs at 97% similarity (weighted by sequence abundance; *see VSEARCH documentation*), then does an additional chimera check to find and remove any chimeras that might have slipped through DADA2. The number removed here should be quite small (check log file).
 
-### STEP 3 - MUMU/LULU OTU Curation
+### Step 2 - MUMU/LULU OTU Curation
 
 *mumu* is a post-clustering clean up algorithm that is supposed to find rare variants sequences of common sequences that leak through the clustering steps.
 It works in two steps. All sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also show a very similar occurrence pattern, is is merged with this "parent" sequence. These sequences are assumed to be additional sequencing errors that have made it through all previous cleaning steps. Mostly used to clean up singleton and doubleton sequences. *mumu* is a unix version of lulu, with some optimisation to run faster.
 
-### Step 4 DADA2 RDP Taxonomy Assignment
+### Step 3 - DADA2 RDP Taxonomy Assignment
 
 After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database, UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
 
