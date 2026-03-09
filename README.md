@@ -1,6 +1,8 @@
-# SLURM-based pipeline for post-processing DADA2 ASV tables to denoised OTUs
+# SLURM pipeline to convert DADA2 ASV tables to denoised OTUs
 
 ### Pipeline Overview and Authors
+
+This pipeline script was written specifically for use by the Kennedy Lab at the University of Minnesota. It takes DADA2 ASV tables outputs from Trevor Gould's pipeline, and converts them to denoised OTUs. The goal here is to further reduce sequencing noise and errors coming off the sequencing platform, and will likely be most helpful for cleaning non-host associated bulk communities with extremely high sequence diversity. OTUs are clustered at 97% sequence identity, which very approximately represents the level of species. The pipeline is specifically designed for the Minnesota Agate computing cluster, and requires user access to the Kennedy lab shared folders for use. If you would like to run this on a different computing cluster, or don't have access to the Kennedy Lab folders, please contact me (Peter F; falb0011@umn.edu). 
 
 Full credit for the development of this pipeline goes to Eivind Ronold and Luis Morgado. I (PF) have updated and adapted all the scripts to work on University of Minnesota systems, as well as implemented various bug fixes and speed/code improvements. Individual scripts were consolidated into one pipeline script which compiles and installs all necessary packages for running the pipeline. The pipeline was also adapted to handle all types of sequencing data currently used in the Kennedy Lab (16S-V4, ITS1, ITS2, 18S-V4, 18S-AMF). 
 
@@ -10,7 +12,7 @@ The original Zazzy pipeline created by Luis Morgado was designed to handle seque
 
 **Updated by Eivind Kverme Ronold, University of Oslo, September 2024**
 
-**Updated by Peter Falb, University of Minnesota for compatability at UM**
+**Updated by Peter Falb, University of Minnesota, March 2026**
 
 ## Installation Instructions:
 
@@ -84,9 +86,13 @@ To run the script, you need to ssh login to the cluster and go to the directory 
 2. Path to ASV table
 3. Project Name (this will determine how your output files are named)
 4. Primer Set / Barcoding Region
-5. Whether to run ITSx (*only applicable for ITS1 or ITS2 regions*) -- See note below
+5. Whether to run ITSx (*only applicable for ITS1 or ITS2 regions; SEE NOTE BELOW*).
+
+Expect a runtime of 10-30 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
 
 *ITSx is a program which removes the highly conserved regions flanking the ITS variable region. ITS primers often pick up these conserved regions, which can artificially inflate the sequence similarity (clustering) between different ITS ASVs. The pipeline will automatically run ITSx for ITS primer sets, but if you prefer to NOT run this step, add the flag --skip_itsx*
+
+*Additionally, please avoid using taxonomic ranking names (e.g. Class, Order, etc.) as sample names in the input ASV table, as this will screw up the column filtering code*
 
 **Navigate to directory of script then run the command**
 ```bash
@@ -134,30 +140,37 @@ The *pipeline_run.log* also summarizes other files you may be interested in.
 ## Summary of main pipeline steps:
 
 ### Step 0 - ITSx (only relevant for ITS datasets)
- In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences. This will likely take the longest of any step in the process, Somewhere between 5-20 minutes depending on the dataset.
+ In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences.
 
 ### Step 1 - VSEARCH Clustering
 
-This step uses the VSEARCH algorithm to cluster ASVs at 97% similarity (weighted by sequence abundance; *see VSEARCH documentation*), then does an additional chimera check to find and remove any chimeras that might have slipped through DADA2. The number removed here should be quite small (check log file).
+This step uses the VSEARCH algorithm to cluster ASVs at 97% similarity (weighted by sequence abundance; *see VSEARCH documentation*), then does an additional chimera check to find and remove any chimeras that might have slipped through DADA2. The number removed here should be quite small (check log file), but may vary wildly by primer set. 
+
+**NOTE:** *Initial testing seems to suggest that up to 20% of the OTUs in 18S-V4 primer datasets are detected to be chimeric. My assumption with the 18S primer is that it is trying to pick up so much sequence diversity across the eukaryotic tree that it picks up a lot of errors a long the way. Nevertheless, I (PF) would like to do more testing to fully understand whats going on here.*
 
 ### Step 2 - MUMU/LULU OTU Curation
 
 *mumu* is a post-clustering clean up algorithm that is supposed to find rare variants sequences of common sequences that leak through the clustering steps.
 It works in two steps. All sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also show a very similar occurrence pattern, is is merged with this "parent" sequence. These sequences are assumed to be additional sequencing errors that have made it through all previous cleaning steps. Mostly used to clean up singleton and doubleton sequences. *mumu* is a unix version of lulu, with some optimisation to run faster.
 
+**NOTE:** *Similar to above, I have found in my preliminary testing of 18S-V4 datasets that more than 50% of OTUs are detected to have a parent OTU by mumu. Similar assumptions to above for why this is happening, but it is worth looking into this, and whether mumu parameters should be tweaked for 18S datasets.*
+
 ### Step 3 - DADA2 RDP Taxonomy Assignment
 
 After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database, UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
 
-## Citations:
+This will likely take the longest of any step in the process, Somewhere between 5-20 minutes depending on how many OTUs there are.
+
+## Citations
 
 If you use this, please give credit to Luis Morgado for developing the original Zazzy Metabarcoding Pipeline (https://github.com/ekronold/Zazzy_metabarcoding_pipeline), and Eivind Kverme Ronold for making the initial updates for adaptation to DADA2 output ASV files.
 
-**Additionally** please cite the primary packages and databases used in the pipeline:
+*Additionally, please cite the primary packages and databases used in the pipeline:*
 
-#### Packages:
 
-ITSx: Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for use in environmental sequencing. Johan Bengtsson-Palme, Vilmar Veldre, Martin Ryberg, Martin Hartmann, Sara Branco, Zheng Wang, Anna Godhe, Yann Bertrand, Pierre De Wit, Marisol Sanchez, Ingo Ebersberger, Kemal Sanli, Filipe de Souza, Erik Kristiansson, Kessy Abarenkov, K. Martin Eriksson, R. Henrik Nilsson *Methods in Ecology and Evolution, 4: 914-919, 2013* (DOI: 10.1111/2041-210X.12073)
+### Packages:
+
+ITSx: Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for use in environmental sequencing. Johan Bengtsson-Palme, Vilmar Veldre, Martin Ryberg, Martin Hartmann, Sara Branco, Zheng Wang, Anna Godhe, Yann Bertrand, Pierre De Wit, Marisol Sanchez, Ingo Ebersberger, Kemal Sanli, Filipe de Souza, Erik Kristiansson, Kessy Abarenkov, K. Martin Eriksson, R. Henrik Nilsson *Methods in Ecology and Evolution, 4: 914-919, 2013* (https://doi.org/10.1111/2041-210X.12073)
 
 Rognes T, Flouri T, Nichols B, Quince C, Mahé F. (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584.
 doi: [10.7717/peerj.2584](https://doi.org/10.7717/peerj.2584)
@@ -166,7 +179,10 @@ Frédéric Mahé. (2026) mumu: post-clustering curation tool for metabarcoding d
 
 Frøslev, T. G., Kjøller, R., Bruun, H. H., Ejrnæs, R., Brunbjerg, A. K., Pietroni, C., & Hansen, A. J. (2017). Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nature Communications, 8(1), 1188. (https://doi.org/10.1038/s41467-017-01312-x)
 
-#### Databases
+Callahan, B., McMurdie, P., Rosen, M. et al. DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583 (2016). https://doi.org/10.1038/nmeth.3869
+
+
+### Databases:
 
 González-Miguéns, R., Gàlvez-Morante, À., Skamnelou, M., Antó, M., Casacuberta, E., Richter, D.J., Lara, E. et al. 2025. A novel taxonomic database for eukaryotic mitochondrial cytochrome oxidase subunit I gene (eKOI),with a focus on protists diversity. Database (Oxford). 2025:baaf057.
 
