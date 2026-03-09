@@ -22,7 +22,7 @@
 # ==============================================================================
 
 #SBATCH --job-name=ASVtoOTUpipeline
-#SBATCH --time=6:00:00
+#SBATCH --time=2:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=40

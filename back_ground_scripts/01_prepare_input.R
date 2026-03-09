@@ -59,13 +59,24 @@ setwd(WORK_DIR)
 
 fullTable <- read_tsv(ASVTABLE_PATH, show_col_types = FALSE)
 
-# Remove taxonomy columns — keep only ASV sequence column + sample count columns
-taxon_ranks <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species",
-                 "Domain", "Supergroup", "Division", "Subdivision")
-tax_pattern <- paste(taxon_ranks, collapse = "|")
+# Remove taxonomy and bootstrap columns by name
+# Covers all primer sets: ITS, 16S, 18S-V4, 18S-AMF
+tax_ranks <- c(
+  "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species",
+  "Domain", "Supergroup", "Division", "Subdivision",
+  "NA"
+)
 
-asvT <- fullTable[, !grepl(tax_pattern, names(fullTable), ignore.case = TRUE)]
+# Build pattern that matches exact rank names AND deduplicated variants (e.g. Kingdom...196)
+tax_pattern <- paste0("^(", paste(tax_ranks, collapse = "|"), ")(\\.\\.\\.[0-9]+)?$")
+
+keep <- !grepl(tax_pattern, names(asvT), ignore.case = FALSE)
+keep[1] <- TRUE  # always keep ASV column
+
+asvT <- asvT[, keep]
 names(asvT)[1] <- "ASV"
+
+cat("Columns retained (ASV + sample counts): ", ncol(asvT), "\n")
 
 n_samples <- ncol(asvT)  # includes ASV column
 

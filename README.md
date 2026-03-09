@@ -78,6 +78,7 @@ scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/y
 ```
 
 **Step 2: Run the pipeline**
+
 To run the script, you need to ssh login to the cluster and go to the directory where the pipeline script is housed. Then, you will have to run the script with a SLURM submission, specifying 4-5 things:
 1. Path to project directory
 2. Path to ASV table
