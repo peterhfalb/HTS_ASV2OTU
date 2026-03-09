@@ -70,10 +70,10 @@ tax_ranks <- c(
 # Build pattern that matches exact rank names AND deduplicated variants (e.g. Kingdom...196)
 tax_pattern <- paste0("^(", paste(tax_ranks, collapse = "|"), ")(\\.\\.\\.[0-9]+)?$")
 
-keep <- !grepl(tax_pattern, names(asvT), ignore.case = FALSE)
-keep[1] <- TRUE  # always keep ASV column
+keep <- !grepl(tax_pattern, names(fullTable), ignore.case = FALSE)
+keep[1] <- TRUE  # always keep ASV column (sequences)
 
-asvT <- asvT[, keep]
+asvT <- fullTable[, keep]
 names(asvT)[1] <- "ASV"
 
 cat("Columns retained (ASV + sample counts): ", ncol(asvT), "\n")
