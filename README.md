@@ -6,7 +6,7 @@ This pipeline script was written specifically for use by the Kennedy Lab at the 
 
 Full credit for the development of this pipeline goes to Eivind Ronold and Luis Morgado. I (PF) have updated and adapted all the scripts to work on University of Minnesota systems, as well as implemented various bug fixes and speed/code improvements. Individual scripts were consolidated into one pipeline script which compiles and installs all necessary packages for running the pipeline. The pipeline was also adapted to handle all types of sequencing data currently used in the Kennedy Lab (16S-V4, ITS1, ITS2, 18S-V4, 18S-AMF). 
 
-The original Zazzy pipeline created by Luis Morgado was designed to handle sequences directly from multiplexed libraries from sequencing centers, then clean an run DADA2. This is a truncated version adapted to take pre-DADA2 processed ASV files outputted from Trevor Gould's MSI pipeline. 
+The original Zazzy pipeline created by Luis Morgado was designed to handle sequences directly from multiplexed libraries from sequencing centers, then clean and run DADA2. This is a truncated version adapted to take pre-DADA2 processed ASV files outputted from Trevor Gould's MSI pipeline. 
 
 **Zazzy Metabarcoding Pipeline created by Luis Morgado, University of Oslo**
 
@@ -151,15 +151,15 @@ This step uses the VSEARCH algorithm to cluster ASVs at 97% similarity (weighted
 ### Step 2 - MUMU/LULU OTU Curation
 
 *mumu* is a post-clustering clean up algorithm that is supposed to find rare variants sequences of common sequences that leak through the clustering steps.
-It works in two steps. All sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also show a very similar occurrence pattern, is is merged with this "parent" sequence. These sequences are assumed to be additional sequencing errors that have made it through all previous cleaning steps. Mostly used to clean up singleton and doubleton sequences. *mumu* is a unix version of lulu, with some optimisation to run faster.
+It works in two steps. All sequences are blasted against each other. Sequences with high similarity are checked for patterns in the OTU table. If a rare sequence with high similarity to a common sequence also shows a very similar occurrence pattern, it is merged with this "parent" sequence. These sequences are assumed to be additional sequencing errors that have made it through all previous cleaning steps. Mostly used to clean up singleton and doubleton sequences. *mumu* is a unix version of the LULU package (Frøslev et al., 2017), with some optimisation to run faster.
 
 **NOTE:** *Similar to above, I have found in my preliminary testing of 18S-V4 datasets that more than 50% of OTUs are detected to have a parent OTU by mumu. Similar assumptions to above for why this is happening, but it is worth looking into this, and whether mumu parameters should be tweaked for 18S datasets.*
 
 ### Step 3 - DADA2 RDP Taxonomy Assignment
 
-After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database, UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
+After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database: UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
 
-This will likely take the longest of any step in the process, Somewhere between 5-20 minutes depending on how many OTUs there are.
+This will likely take the longest of any step in the process, Somewhere between 5-45 minutes depending on how many OTUs there are.
 
 ## Citations
 
@@ -184,7 +184,7 @@ Callahan, B., McMurdie, P., Rosen, M. et al. DADA2: High-resolution sample infer
 
 ### Databases:
 
-González-Miguéns, R., Gàlvez-Morante, À., Skamnelou, M., Antó, M., Casacuberta, E., Richter, D.J., Lara, E. et al. 2025. A novel taxonomic database for eukaryotic mitochondrial cytochrome oxidase subunit I gene (eKOI),with a focus on protists diversity. Database (Oxford). 2025:baaf057.
+Guillou, L., Bachar, D., Audic, S., Bass, D., Berney, C., Bittner, L., Boutte, C. et al. 2013. The Protist Ribosomal Reference database (PR2): a catalog of unicellular eukaryote Small Sub-Unit rRNA sequences with curated taxonomy. Nucleic Acids Res. 41:D597–604.
 
 Chuvochina M, Gerken J, Frentrup M, Sandikci Y, Goldmann R, Freese HM, Göker M, Sikorski J, Yarza P, Quast C, Peplies J, Glöckner FO, Reimer LC (2026) SILVA in 2026: a global core biodata resource for rRNA within the DSMZ digital diversity. Nucleic Acids Research, gkaf1247.
 
