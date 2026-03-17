@@ -19,29 +19,34 @@ The original Zazzy pipeline created by Luis Morgado was designed to handle seque
 Login in to MSI via terminal on your mac (usage might be different on Windows, see https://msi.umn.edu/connecting/connecting-to-hpc-resources):
 
 ```bash
-ssh -Y yourUMNusername@agate.msi.umn.edu #Fill in with your UMN username
+# login to MSI via SSH secure shell
+ssh -Y yourUMNusername@agate.msi.umn.edu # change 'yourUMNusername' to your UMN username
 ```
 
-Next, move into a personal directory where you would like the pipeline files to be installed (this is a permanent, single location you will use anytime you run the pipeline):
+Next, move into a personal directory where you would like the pipeline files to be installed, or create a new directory to house your pipelines. This is a permanent, single location you will use anytime you run the pipeline, and is personal to you (it won't work for other users).
 
 ```bash
-#For example:
-cd Packages/KennedyLabPipelines/
+# [optional]: make a directory for pipelines/packages (if desired/needed)
+mkdir pipelines # mkdir is "make directory"
+
+# move into the directory where you want the pipeline installed
+cd pipelines/ # cd is "change directory"
 ```
 
-Once in your preferred directory, clone the github repository:
+Once in your preferred directory, clone the HTS_ASV2OTU github repository:
 ```bash
 git clone https://github.com/peterhfalb/HTS_ASV2OTU.git
 ```
 
-To set up the pipeline script and packages move into the cloned repository and run the setup script:
+To set up and install the pipeline, open the cloned repository and run the setup/installation script:
 ```bash
 # move into the cloned repository
 cd HTS_ASV2OTU/ 
 
-# run this line to update the pipeline script and
-# answer the prompt to enter your email for SLURM notifications
-bash setup.sh 
+# run this line of code to install and compile the pipeline package
+bash setup.sh
+# then type into the prompt asking for your email, to setup your email for SLURM notifications
+# pipeline installation could take 10-15 minutes, but is only necessary the first time you run the pipeline
 ```
 This script does 3 things, *FIRST* it updates the path to reflect where the pipeline code is located on the cluster, *SECOND* it prompts you for your email, which will be used to send SLURM notifications when you run the script, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
 
@@ -67,8 +72,8 @@ mkdir yourProjectName_ASVtoOTU
 # navigate into the new directory
 cd yourProjectName_ASVtoOTU 
 
-# print and copy this path to the file directory
-pwd 
+# print and copy the path to the file directory
+pwd # "print working directory" - copy what this prints
 
 # leave the ssh window
 exit 
@@ -76,6 +81,7 @@ exit
 # copy your ASV table from your local computer to your new project directory on the cluster
 # (fill in file paths and your UMN username)
 scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/yourProjectName_ASVtoOTU/ 
+# scp is 'secure copy', and allows you to copy files from your local device directly to the cluster
 
 ```
 
@@ -88,9 +94,11 @@ To run the script, you need to ssh login to the cluster and go to the directory 
 4. Primer Set / Barcoding Region
 5. Whether to run ITSx (*only applicable for ITS1 or ITS2 regions; SEE NOTE BELOW*).
 
-Expect a runtime of 10-30 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
+Expect a runtime of 10-45 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
 
 *ITSx is a program which removes the highly conserved regions flanking the ITS variable region. ITS primers often pick up these conserved regions, which can artificially inflate the sequence similarity (clustering) between different ITS ASVs. The pipeline will automatically run ITSx for ITS primer sets, but if you prefer to NOT run this step, add the flag --skip_itsx*
+
+*NOTE: recent testing has shown that ITSx seems to remove the synmock ASVs used by the Kennedy lab for the positive control. If using an ITS dataset with a synmock community, you may want to skip the ITSx step*
 
 *Additionally, please avoid using taxonomic ranking names (e.g. Class, Order, etc.) as sample names in the input ASV table, as this will screw up the column filtering code*
 
@@ -99,8 +107,8 @@ Expect a runtime of 10-30 minutes. It should not go much longer than that, but t
 # login to the cluster (fill in your UMN username)
 ssh -Y yourMSIusername@agate.msi.umn.edu 
 
-# navigate to directory where you cloned the pipeline scripts
-cd path/to/pipelineCode/directory/
+# navigate to the directory where you cloned and set up the pipeline scripts (HTS_ASV2OTU folder)
+cd pipelines/HTS_ASV2OTU/ # you can also use cd .. to go up a directory
 
 # submit the slurm job with the following commands:
 sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx]
@@ -118,6 +126,8 @@ sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_s
 #   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 16S-V4
 ```
 
+Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
+
 **A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run the sbatch command, it submits the script as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a .out and .err file within the directory where the pipeline is stored. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
 
 After your job has started, you can watch its progress in real time using the following command:
@@ -128,11 +138,15 @@ tail -f pipeline_*.out
 
 ```
 
+This will show you a running output of what the pipeline is doing. If you have run the pipeline before, it will also show you log outputs from previous runs. It's not necessary to do this step, but if you want to track the pipeline in real time, this is an easy way to do it.
+
+After the pipeline is done, or if you want to exit the live view of whats happening, hit Control+C & Enter on Mac (not sure what the equivalent is for Windows).
+
 ## Output Files:
 
 The ASV to OTU pipeline will output a LOT of files (see below for descriptions of all), but you will likely be most interested in two:
 
-1. *ProjectName_OTU_with_taxonomy_PrimerSet.txt* -  This is your new data table, functionally equivalent to the input ASV table, but with OTU-level abundances with new taxonomic assignments
+1. *ProjectName_OTU_with_taxonomy_PrimerSet.txt* -  This is your new data table, functionally equivalent to the input ASV table, but with OTU-level abundances with new taxonomic assignments. (ProjectName is your inputted project name, and PrimerSet will be your primer set)
 2. *pipeline_run.log* - This is a log file which has logged a. everything the pipeline did and b. what each of the steps removed. You will want to look at the "Pipeline Summary - Quality Control" section which tells you how many ASVs/OTUs were removed in each step of the process. 
 
 The *pipeline_run.log* also summarizes other files you may be interested in.
@@ -140,7 +154,7 @@ The *pipeline_run.log* also summarizes other files you may be interested in.
 ## Summary of main pipeline steps:
 
 ### Step 0 - ITSx (only relevant for ITS datasets)
- In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences.
+ In essence, ITSx identifies and removes the highly conserved 5.8S part of the ITS2 barcodes. This makes for better clustering later, as the 5.8S regions inflates the similarity between sequences. It also discards sequences that are identified as not ITS, which may accidentally discard synthetic community members (synmock). If you run this and find that your synmock does not contain the expected high abundance synthetic community members, it may be because ITSx has removed them. Try re-running the pipeline without ITSx.
 
 ### Step 1 - VSEARCH Clustering
 
@@ -159,11 +173,11 @@ It works in two steps. All sequences are blasted against each other. Sequences w
 
 After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database: UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
 
-This will likely take the longest of any step in the process, Somewhere between 5-45 minutes depending on how many OTUs there are.
+This will likely take the longest of any step in the process -- somewhere between 5-45 minutes depending on how many OTUs there are, and the size of the reference database (PR2 takes the longest). 
 
 ## Citations
 
-If you use this, please give credit to Luis Morgado for developing the original Zazzy Metabarcoding Pipeline (https://github.com/ekronold/Zazzy_metabarcoding_pipeline), and Eivind Kverme Ronold for making the initial updates for adaptation to DADA2 output ASV files.
+If you use this pipeline, please give credit to Luis Morgado for developing the original Zazzy Metabarcoding Pipeline (https://github.com/ekronold/Zazzy_metabarcoding_pipeline), and Eivind Kverme Ronold for making the initial updates for adaptation to DADA2 output ASV files.
 
 *Additionally, please cite the primary packages and databases used in the pipeline:*
 

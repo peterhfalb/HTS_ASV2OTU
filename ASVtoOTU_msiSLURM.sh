@@ -85,6 +85,20 @@ case "$PRIMER_SET" in
     *) echo "ERROR: Invalid primer set '$PRIMER_SET'. Must be one of: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"; exit 1 ;;
 esac
 
+# Validate --skip-itsx flag if provided
+if [ -n "${5:-}" ]; then
+    if [ "$5" != "--skip-itsx" ]; then
+        echo "ERROR: Unrecognized 5th argument: '$5'"
+        echo "       The only valid 5th argument is: --skip-itsx"
+        echo ""
+        echo "Usage: sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx]"
+        exit 1
+    fi
+    SKIP_ITSX=true
+else
+    SKIP_ITSX=false
+fi
+
 [ -d "$PROJECT_DIR" ] || { echo "ERROR: project directory not found: $PROJECT_DIR"; exit 1; }
 [ -f "$ASV_TABLE" ]   || { echo "ERROR: ASV table not found: $ASV_TABLE"; exit 1; }
 
