@@ -41,6 +41,9 @@ echo "  Email set to: $USER_EMAIL"
 echo ""
 echo "--- Setting up conda environment ---"
 
+# load conda module
+module load conda
+
 # Source conda
 CONDA_BASE=$(conda info --base 2>/dev/null) || { echo "ERROR: conda not found. Please load/install conda first."; exit 1; }
 source "$CONDA_BASE/etc/profile.d/conda.sh"
