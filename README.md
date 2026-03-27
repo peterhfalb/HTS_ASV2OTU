@@ -87,12 +87,13 @@ scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/y
 
 **Step 2: Run the pipeline**
 
-To run the script, you need to ssh login to the cluster and go to the directory where the pipeline script is housed. Then, you will have to run the script with a SLURM submission, specifying 4-5 things:
+To run the script, you need to ssh login to the cluster and go to the directory where the pipeline script is housed. Then, you will have to run the script with a SLURM submission, specifying 4-6 things:
 1. Path to project directory
 2. Path to ASV table
 3. Project Name (this will determine how your output files are named)
 4. Primer Set / Barcoding Region
-5. Whether to run ITSx (*only applicable for ITS1 or ITS2 regions; SEE NOTE BELOW*).
+5. Whether to run ITSx (*only applicable for ITS1 or ITS2 regions; SEE NOTE BELOW*)
+6. Manually pick reference database (if you would like to specify a non-default reference database for your given group)
 
 Expect a runtime of 10-45 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
 
@@ -111,7 +112,7 @@ ssh -Y yourMSIusername@agate.msi.umn.edu
 cd pipelines/HTS_ASV2OTU/ # you can also use cd .. to go up a directory
 
 # submit the slurm job with the following commands:
-sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx]
+sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
 
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
@@ -119,6 +120,14 @@ sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_s
 #   16S-V4     — bacterial 16S V4 region (SILVA database, no ITSx)
 #   18S-V4     — microeukaryote 18S V4 region (PR2 database, no ITSx)
 #   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, no ITSx)
+
+# DATABASE OPTIONS (if manually chosen, using flag --db):
+#   SILVA        - bacteria SSU 16S rRNA sequences
+#   UNITE        - fungal ITS1 and ITS2 regions
+#   PR2          - full-length SSU 18S sequences, covers whole eukaryote tree but with focus on protists
+#   Maarjam      - AMF 18S SSU sequences
+#   EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree
+#   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 
 # EXAMPLES:
 #   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2
@@ -129,6 +138,8 @@ sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_s
 Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
 
 **A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run the sbatch command, it submits the script as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a .out and .err file within the directory where the pipeline is stored. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
+
+**A note about reference databases:** Generally the default will probably work well, but for 18S AMF and microeukaryote data, the EukaryomeSSU dataset *may* get better taxonomic annotation. It might be worthwhile to test out using this database for taxonomy assignment. If you were feeling spicy, you could also test out using the EukaryomeITS database for taxonomy annotation of fungal ITS data, but at this point I can't comment on how it compares to UNITE taxonomy.
 
 After your job has started, you can watch its progress in real time using the following command:
 ```bash

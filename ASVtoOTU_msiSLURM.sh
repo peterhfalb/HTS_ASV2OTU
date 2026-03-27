@@ -5,7 +5,7 @@
 # ==============================================================================
 #
 # USAGE: Navigate to directory of script then run the command
-#   sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx]
+#   sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
 #
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
@@ -13,6 +13,14 @@
 #   16S-V4     — bacterial 16S V4 region (SILVA database, no ITSx)
 #   18S-V4     — microeukaryote 18S V4 region (PR2 database, no ITSx)
 #   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, no ITSx)
+#
+# DATABASE OPTIONS (if manually chosen, using flag --db):
+#   SILVA        - bacteria SSU 16S rRNA sequences
+#   UNITE        - fungal ITS1 and ITS2 regions
+#   PR2          - full-length SSU 18S sequences, covers whole eukaryote tree but with focus on protists
+#   Maarjam      - AMF 18S SSU sequences
+#   EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree
+#   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 #
 # EXAMPLES:
 #   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2
