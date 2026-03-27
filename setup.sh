@@ -143,25 +143,27 @@ echo "--- Checking databases ---"
 SHARED_DB="/projects/standard/kennedyp/shared/taxonomy"
 
 declare -A DB_FILES
-DB_FILES["ITS1/ITS2"]="sh_general_release_dynamic_all_19.02.2025.fasta"
-DB_FILES["16S-V4"]="silva_nr99_v138.2_toGenus_trainset.fa"
-DB_FILES["18S-V4"]="pr2_version_5.1.1_SSU_dada2.fasta"
-DB_FILES["18S-AMF"]="maarjam_dada2.txt"
+DB_FILES["UNITE (ITS1/ITS2 default)"]="sh_general_release_dynamic_all_19.02.2025.fasta"
+DB_FILES["SILVA (16S-V4 default)"]="silva_nr99_v138.1_train_set.fa"
+DB_FILES["PR2 (18S-V4 default)"]="pr2_version_5.1.1_SSU_dada2.fasta"
+DB_FILES["Maarjam (18S-AMF default)"]="maarjam_dada2.txt"
+DB_FILES["EukaryomeITS (--db EukaryomeITS)"]="DADA2_EUK_ITS_v2.0.fasta"
+DB_FILES["EukaryomeSSU (--db EukaryomeSSU)"]="DADA2_EUK_SSU_v2.0.fasta"
 
 ALL_DB_OK=true
-for primer in "${!DB_FILES[@]}"; do
-    db="${DB_FILES[$primer]}"
+for db_label in "${!DB_FILES[@]}"; do
+    db="${DB_FILES[$db_label]}"
     if [ -f "$SHARED_DB/$db" ]; then
-        echo "  $primer: OK"
+        echo "  $db_label: OK"
     else
-        echo "  $primer: NOT FOUND at $SHARED_DB/$db"
+        echo "  $db_label: NOT FOUND at $SHARED_DB/$db"
         ALL_DB_OK=false
     fi
 done
 
 if [ "$ALL_DB_OK" = false ]; then
     echo ""
-    echo "WARNING: Some databases not found. Contact Peter F (falb0011@umn.edu) or check shared directory:"
+    echo "WARNING: Some databases not found. Contact your PI or check shared directory:"
     echo "  $SHARED_DB"
 fi
 

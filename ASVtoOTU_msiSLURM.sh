@@ -63,10 +63,11 @@ export PATH=$HOME/packages:$PATH
 # ------------------------------------------------------------------------------
 
 if [ "$#" -lt 4 ]; then
-    echo "Usage: sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx]"
+    echo "Usage: sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
     echo ""
-    echo "Primer set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
-    echo "Optional flag:      --skip-itsx (only applies to ITS1 and ITS2)"
+    echo "  primer_set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
+    echo "  --db options:       UNITE, SILVA, PR2, Maarjam, EukaryomeITS, EukaryomeSSU"
+    echo "  --skip-itsx:        skip ITSx extraction (ITS1/ITS2 only)"
     exit 1
 fi
 
@@ -74,30 +75,29 @@ PROJECT_DIR="$1"
 ASV_TABLE="$2"
 PROJ="$3"
 PRIMER_SET="$4"
+
+# Parse optional flags
 SKIP_ITSX=false
-if [ "${5:-}" == "--skip-itsx" ]; then
-    SKIP_ITSX=true
-fi
+DB_OVERRIDE=""
 
-# Validate primer set
-case "$PRIMER_SET" in
-    ITS1|ITS2|16S-V4|18S-V4|18S-AMF) ;;
-    *) echo "ERROR: Invalid primer set '$PRIMER_SET'. Must be one of: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"; exit 1 ;;
-esac
-
-# Validate --skip-itsx flag if provided
-if [ -n "${5:-}" ]; then
-    if [ "$5" != "--skip-itsx" ]; then
-        echo "ERROR: Unrecognized 5th argument: '$5'"
-        echo "       The only valid 5th argument is: --skip-itsx"
-        echo ""
-        echo "Usage: sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx]"
-        exit 1
-    fi
-    SKIP_ITSX=true
-else
-    SKIP_ITSX=false
-fi
+for arg in "${@:5}"; do
+    case "$arg" in
+        --skip-itsx)
+            SKIP_ITSX=true
+            ;;
+        --db)
+            # handled by next iteration — see below
+            ;;
+        UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU)
+            DB_OVERRIDE="$arg"
+            ;;
+        *)
+            echo "ERROR: Unrecognized argument: '$arg'"
+            echo "       Valid optional arguments: --skip-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>"
+            exit 1
+            ;;
+    esac
+done
 
 [ -d "$PROJECT_DIR" ] || { echo "ERROR: project directory not found: $PROJECT_DIR"; exit 1; }
 [ -f "$ASV_TABLE" ]   || { echo "ERROR: ASV table not found: $ASV_TABLE"; exit 1; }
@@ -105,32 +105,63 @@ fi
 cd "$PROJECT_DIR"
 
 # ------------------------------------------------------------------------------
-# Set database based on primer set
+# Set database — use override if provided, otherwise use primer set default
 # ------------------------------------------------------------------------------
 
+DB_DIR="/projects/standard/kennedyp/shared/taxonomy"
+
+# Default databases per primer set
 case "$PRIMER_SET" in
     ITS1|ITS2)
-        DB="/projects/standard/kennedyp/shared/taxonomy/sh_general_release_dynamic_all_19.02.2025.fasta"
+        DEFAULT_DB="UNITE"
         RUN_ITSX=true
-        if [ "$PRIMER_SET" == "ITS1" ]; then
-            ITSX_REGION="ITS1"
-        else
-            ITSX_REGION="ITS2"
-        fi
+        ITSX_REGION="$PRIMER_SET"
         ;;
     16S-V4)
-        DB="/projects/standard/kennedyp/shared/taxonomy/silva_nr99_v138.2_toGenus_trainset.fa"
+        DEFAULT_DB="SILVA"
         RUN_ITSX=false
         ;;
     18S-V4)
-        DB="/projects/standard/kennedyp/shared/taxonomy/pr2_version_5.1.1_SSU_dada2.fasta"
+        DEFAULT_DB="PR2"
         RUN_ITSX=false
         ;;
     18S-AMF)
-        DB="/projects/standard/kennedyp/shared/taxonomy/maarjam_dada2.txt"
+        DEFAULT_DB="Maarjam"
         RUN_ITSX=false
         ;;
+    *)
+        echo "ERROR: Unrecognized primer set: '$PRIMER_SET'"
+        echo "       Valid options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
+        exit 1
+        ;;
 esac
+
+# Apply override if specified
+DB_NAME="${DB_OVERRIDE:-$DEFAULT_DB}"
+
+# Resolve database name to file path
+case "$DB_NAME" in
+    UNITE)
+        DB="$DB_DIR/sh_general_release_dynamic_all_19.02.2025.fasta"
+        ;;
+    SILVA)
+        DB="$DB_DIR/silva_nr99_v138.1_train_set.fa"
+        ;;
+    PR2)
+        DB="$DB_DIR/pr2_version_5.1.1_SSU_dada2.fasta"
+        ;;
+    Maarjam)
+        DB="$DB_DIR/maarjam_dada2.txt"
+        ;;
+    EukaryomeITS)
+        DB="$DB_DIR/DADA2_EUK_ITS_v2.0.fasta"
+        ;;
+    EukaryomeSSU)
+        DB="$DB_DIR/DADA2_EUK_SSU_v2.0.fasta"
+        ;;
+esac
+
+[ -f "$DB" ] || { echo "ERROR: Database file not found: $DB"; exit 1; }
 
 if [ "$SKIP_ITSX" = true ]; then
     RUN_ITSX=false
@@ -174,7 +205,7 @@ plog "Project dir:   $PROJECT_DIR"
 plog "ASV table:     $ASV_TABLE"
 plog "Project name:  $PROJ"
 plog "Primer set:    $PRIMER_SET"
-plog "Database:      $DB"
+plog "Database:      $DB ($DB_NAME)"
 if [ "$RUN_ITSX" = true ]; then
     plog "ITSx:          enabled (region: $ITSX_REGION)"
 else
