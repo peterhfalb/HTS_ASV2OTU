@@ -462,21 +462,47 @@ sed -i 's/;.*//' OTU_centroids
 
 makeblastdb -in OTU_centroids -parse_seqids -dbtype nucl > /dev/null 2>&1
 
+# Set BLAST identity threshold for match list based on primer set
+case "$PRIMER_SET" in
+    16S-V4)
+        MUMU_BLAST_ID=90
+        ;;
+    *)
+        MUMU_BLAST_ID=84
+        ;;
+esac
+
+plog "  mumu BLAST identity threshold: $MUMU_BLAST_ID%"
+
 blastn -db OTU_centroids \
     -outfmt '6 qseqid sseqid pident' \
     -out match_list.txt \
     -qcov_hsp_perc 80 \
-    -perc_identity 84 \
+    -perc_identity ${MUMU_BLAST_ID} \
     -num_threads ${THREADS} \
     -query OTU_centroids 2>/dev/null
 
 awk 'BEGIN{FS=OFS="\t"} {sub(/;.*/, "", $1); print}' "${PROJ}.otutable" > mumu_table.txt
 
+# Set mumu minimum_ratio based on primer set
+# Bacteria (16S) requires higher minimum_ratio to prevent merging of distinct taxa
+case "$PRIMER_SET" in
+    16S-V4)
+        MUMU_MIN_RATIO=3
+        ;;
+    *)
+        MUMU_MIN_RATIO=1
+        ;;
+esac
+
+plog "  mumu minimum_ratio: $MUMU_MIN_RATIO"
+
 "$MUMU_BIN" \
     --otu_table mumu_table.txt \
     --match_list match_list.txt \
     --log mumu.log \
-    --new_otu_table "${PROJ}_mumu_curated.txt" 2>&1 | tee -a "$LOG"
+    --new_otu_table "${PROJ}_mumu_curated.txt" \
+    --minimum_ratio $MUMU_MIN_RATIO 2>&1 | tee -a "$LOG"
 
 OTUS_AFTER_MUMU=$(awk 'NR>1' "${PROJ}_mumu_curated.txt" | wc -l | tr -d ' ')
 MUMU_REMOVED=$((OTUS_IN_TABLE - OTUS_AFTER_MUMU))
