@@ -488,7 +488,7 @@ awk 'BEGIN{FS=OFS="\t"} {sub(/;.*/, "", $1); print}' "${PROJ}.otutable" > mumu_t
 # Bacteria (16S) requires higher minimum_ratio to prevent merging of distinct taxa
 case "$PRIMER_SET" in
     16S-V4)
-        MUMU_MIN_RATIO=3
+        MUMU_MIN_RATIO=10
         ;;
     *)
         MUMU_MIN_RATIO=1
