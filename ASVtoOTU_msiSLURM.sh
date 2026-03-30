@@ -465,7 +465,7 @@ makeblastdb -in OTU_centroids -parse_seqids -dbtype nucl > /dev/null 2>&1
 # Set BLAST identity threshold for match list based on primer set
 case "$PRIMER_SET" in
     16S-V4)
-        MUMU_BLAST_ID=90
+        MUMU_BLAST_ID=94
         ;;
     *)
         MUMU_BLAST_ID=84
@@ -488,12 +488,13 @@ awk 'BEGIN{FS=OFS="\t"} {sub(/;.*/, "", $1); print}' "${PROJ}.otutable" > mumu_t
 # Bacteria (16S) requires higher minimum_ratio to prevent merging of distinct taxa
 case "$PRIMER_SET" in
     16S-V4)
-        MUMU_MIN_RATIO=10
+        MUMU_MIN_RATIO=100
         ;;
     *)
         MUMU_MIN_RATIO=1
         ;;
 esac
+
 
 plog "  mumu minimum_ratio: $MUMU_MIN_RATIO"
 
