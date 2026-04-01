@@ -37,7 +37,7 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH -p msismall
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=INSERTEMAILHERE
+#SBATCH --mail-user=INSERTEMAILHEREviaSetupFile
 #SBATCH --output=pipeline_%j.out
 #SBATCH --error=pipeline_%j.err
 
