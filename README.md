@@ -58,6 +58,8 @@ After proper installation, the ASV to OTU pipeline should now be ready to go.
 
 This script takes one input file - the ASV table outputted from Trevor Gould's DADA2 pipeline. This should be a table that has the ASVs as column one, sample abundances in the next columns, then taxonomy and taxonomy bootstrap values as final columns. To run the ASV to OTU pipeline, you will want to create a new project directory on the cluster, and then upload your ASV table. Then you will run the pipeline script.
 
+**Note:** *You can also upload/delete files and folders using an interactive GUI if that is easier. To access that, go to msi.umn.edu, then click "Open OnDemand", then click "Files" and go to either your Home Directory, or the shared kennedyp folder. Now, you can click through your folders, and edit as desired. No computational tasks can be run through here, however.*
+
 **Step 1: Login to the cluster, and prepare files**
 ```bash
 # login to the cluster (fill in your UMN username)
