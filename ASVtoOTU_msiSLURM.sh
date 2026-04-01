@@ -37,7 +37,7 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH -p msismall
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=falb0011@umn.edu
+#SBATCH --mail-user=INSERTEMAILHERE
 #SBATCH --output=pipeline_%j.out
 #SBATCH --error=pipeline_%j.err
 
@@ -150,7 +150,7 @@ DB_NAME="${DB_OVERRIDE:-$DEFAULT_DB}"
 # Resolve database name to file path
 case "$DB_NAME" in
     UNITE)
-        DB="$DB_DIR/sh_general_release_dynamic_all_19.02.2025.fasta"
+        DB="$DB_DIR/sh_general_release_dynamic_all_19.02.2025_wKennedySynmock.fasta"
         ;;
     SILVA)
         DB="$DB_DIR/silva_nr99_v138.1_train_set.fa"
@@ -162,7 +162,7 @@ case "$DB_NAME" in
         DB="$DB_DIR/maarjam_dada2.txt"
         ;;
     EukaryomeITS)
-        DB="$DB_DIR/DADA2_EUK_ITS_v2.0.fasta"
+        DB="$DB_DIR/DADA2_EUK_ITS_v2.0_wKennedySynmock.fasta"
         ;;
     EukaryomeSSU)
         DB="$DB_DIR/DADA2_EUK_SSU_v2.0.fasta"
