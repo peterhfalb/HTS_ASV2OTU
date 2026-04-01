@@ -45,6 +45,7 @@ FASTA_PATH   <- args[1]
 DB_PATH      <- args[2]
 OUTPUT_PATH  <- args[3]
 PRIMER_SET   <- args[4]
+DB_NAME    <- ifelse(length(args) >= 5, args[5], "")
 
 cat("Input FASTA:  ", FASTA_PATH, "\n")
 cat("Database:     ", DB_PATH, "\n")
@@ -66,9 +67,9 @@ cat("Sequences to classify:", length(sequences), "\n")
 
 cat("Running assignTaxonomy...\n")
 
-# Set taxonomy levels based on primer set
-if (PRIMER_SET == "18S-V4") {
-  tax_levels <- c("Domain", "Supergroup", "Division", "Subdivision", 
+# Set taxonomy levels based on primer set and database
+if (PRIMER_SET == "18S-V4" && DB_NAME == "PR2") {
+  tax_levels <- c("Domain", "Supergroup", "Division", "Subdivision",
                   "Class", "Order", "Family", "Genus", "Species")
 } else {
   tax_levels <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")

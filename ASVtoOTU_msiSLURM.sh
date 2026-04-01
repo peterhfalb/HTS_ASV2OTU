@@ -43,14 +43,14 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ------------------------------------------------------------------------------
+# Load user configuration (PIPELINE_DIR, SLURM_EMAIL set by setup.sh)
+# ------------------------------------------------------------------------------
 
-# ==============================================================================
-# CONFIGURE THIS BEFORE RUNNING
-# Set to wherever this pipeline repo is cloned on your system
-# ==============================================================================
-PIPELINE_DIR="/users/9/falb0011/FAB2/ASV2OTU/fullPipeTest/localTerminalRunTest"
-# ==============================================================================
+CONFIG="$SLURM_SUBMIT_DIR/config.sh"
+[ -f "$CONFIG" ] || { echo "ERROR: config.sh not found. Run setup.sh first."; exit 1; }
+source "$CONFIG"
+[ -n "$PIPELINE_DIR" ] || { echo "ERROR: PIPELINE_DIR not set in config.sh"; exit 1; }
 
 # ------------------------------------------------------------------------------
 # Load modules
@@ -534,7 +534,8 @@ $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/05_assign_taxonomy_rdp.R" \
     "Centroid_mumu_curated.fas" \
     "$DB" \
     "Taxonomy_rdp_${PRIMER_SET}.txt" \
-    "${PRIMER_SET}" 2>&1 | tee -a "$LOG"
+    "${PRIMER_SET}" \
+    "${DB_NAME}" 2>&1 | tee -a "$LOG"
 END=$(date +%s)
 plog "  Taxonomy assignment runtime: $(( (END - START) / 60 )) min $(( (END - START) % 60 )) sec"
 
