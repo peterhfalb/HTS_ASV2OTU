@@ -42,22 +42,76 @@ echo ""
 echo "--- Installing run_asv2otu command ---"
 
 mkdir -p "$HOME/bin"
-cat > "$HOME/bin/run_asv2otu" << WRAPPER
+cat > "$HOME/bin/run_asv2otu" << 'WRAPPER'
 #!/bin/bash
-PIPELINE_DIR="$REPO_DIR"
-CONFIG="\$PIPELINE_DIR/config.sh"
-[ -f "\$CONFIG" ] || { echo "ERROR: config.sh not found. Re-run setup.sh."; exit 1; }
-source "\$CONFIG"
-[ -n "\${SLURM_EMAIL:-}" ] || { echo "ERROR: SLURM_EMAIL not set in config.sh"; exit 1; }
-PROJECT_DIR="\${1:-}"
-[ -n "\$PROJECT_DIR" ] || { echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"; exit 1; }
-[ -d "\$PROJECT_DIR" ] || { echo "ERROR: project directory not found: \$PROJECT_DIR"; exit 1; }
-sbatch --mail-user="\$SLURM_EMAIL" \\
-    --output="\$PROJECT_DIR/pipeline_%j.out" \\
-    --error="\$PROJECT_DIR/pipeline_%j.err" \\
-    --export=ALL,PIPELINE_DIR="\$PIPELINE_DIR" \\
-    "\$PIPELINE_DIR/ASVtoOTU_msiSLURM.sh" "\$@"
+
+print_help() {
+cat << 'HELP'
+run_asv2otu — Submit the ASV-to-OTU pipeline as a SLURM job
+
+USAGE:
+  run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [OPTIONS]
+
+REQUIRED ARGUMENTS:
+  project_dir     Path to the output directory for this run (must already exist)
+  asv_table       Path to the input ASV table from Trevor Gould's DADA2 pipeline
+  proj_name       Project name used to label output files (e.g. FAB2)
+  primer_set      Sequencing target — one of:
+                    ITS1      fungal ITS1 region
+                    ITS2      fungal ITS2 region
+                    16S-V4    bacterial 16S V4 region
+                    18S-V4    microeukaryote 18S V4 region
+                    18S-AMF   arbuscular mycorrhizal fungi 18S
+
+OPTIONS:
+  --skip-itsx     Skip ITSx extraction (ITS1/ITS2 only)
+                  Use this if your dataset includes synthetic mock community
+                  members that ITSx may incorrectly remove
+  --db <name>     Override the default taxonomy database. Options:
+                    UNITE        fungal ITS (default for ITS1/ITS2)
+                    SILVA        bacterial 16S (default for 16S-V4)
+                    PR2          eukaryote 18S (default for 18S-V4)
+                    Maarjam      AMF 18S (default for 18S-AMF)
+                    EukaryomeITS broader eukaryote ITS coverage
+                    EukaryomeSSU broader eukaryote 18S coverage
+  -h, --help      Show this help message and exit
+
+EXAMPLES:
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 16S-V4
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2 --skip-itsx
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-V4 --db EukaryomeSSU
+
+NOTES:
+  - SLURM notifications are sent to the email set during setup.sh
+  - Output files are organised into subdirectories within project_dir
+  - The final OTU table will be at:
+      project_dir/<proj_name>_OTU_with_taxonomy_<primer_set>.txt
+  - Run pipeline_run.log in project_dir for a full QC summary after completion
+
+HELP
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    print_help
+    exit 0
+fi
+
+PIPELINE_DIR="PIPELINE_DIR_PLACEHOLDER"
+CONFIG="$PIPELINE_DIR/config.sh"
+[ -f "$CONFIG" ] || { echo "ERROR: config.sh not found. Re-run setup.sh."; exit 1; }
+source "$CONFIG"
+[ -n "${SLURM_EMAIL:-}" ] || { echo "ERROR: SLURM_EMAIL not set in config.sh"; exit 1; }
+PROJECT_DIR="${1:-}"
+[ -n "$PROJECT_DIR" ] || { echo "ERROR: project_dir is required. Run 'run_asv2otu --help' for usage."; exit 1; }
+[ -d "$PROJECT_DIR" ] || { echo "ERROR: project directory not found: $PROJECT_DIR"; exit 1; }
+sbatch --mail-user="$SLURM_EMAIL" \
+    --output="$PROJECT_DIR/pipeline_%j.out" \
+    --error="$PROJECT_DIR/pipeline_%j.err" \
+    --export=ALL,PIPELINE_DIR="$PIPELINE_DIR" \
+    "$PIPELINE_DIR/ASVtoOTU_msiSLURM.sh" "$@"
 WRAPPER
+# Substitute the actual pipeline directory into the wrapper
+sed -i "s|PIPELINE_DIR_PLACEHOLDER|$REPO_DIR|g" "$HOME/bin/run_asv2otu"
 chmod +x "$HOME/bin/run_asv2otu"
 echo "  run_asv2otu installed to ~/bin/run_asv2otu"
 

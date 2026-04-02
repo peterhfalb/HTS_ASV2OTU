@@ -91,6 +91,11 @@ scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/y
 
 **Step 2: Run the pipeline**
 
+You can view full usage information at any time by running:
+```bash
+run_asv2otu --help
+```
+
 To run the script, ssh login to the cluster and run `run_asv2otu` from anywhere — no need to navigate to the pipeline directory. You will have to specify 4-6 things:
 1. Path to project directory
 2. Path to ASV table
