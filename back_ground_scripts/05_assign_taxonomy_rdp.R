@@ -68,10 +68,17 @@ cat("Sequences to classify:", length(sequences), "\n")
 cat("Running assignTaxonomy...\n")
 
 # Set taxonomy levels based on primer set and database
+# These must exactly match the number of semicolon-delimited levels in the database headers
 if (PRIMER_SET == "18S-V4" && DB_NAME == "PR2") {
+  # PR2 uses a non-standard 9-level hierarchy
   tax_levels <- c("Domain", "Supergroup", "Division", "Subdivision",
                   "Class", "Order", "Family", "Genus", "Species")
+} else if (DB_NAME == "Maarjam") {
+  # MaarjAM headers have 5 levels starting at Class (no Kingdom/Phylum —
+  # the database covers only Glomeromycota so higher ranks are implicit)
+  tax_levels <- c("Class", "Order", "Family", "Genus", "Species")
 } else {
+  # UNITE, SILVA, EukaryomeITS, EukaryomeSSU — standard 7-level hierarchy
   tax_levels <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 }
 
