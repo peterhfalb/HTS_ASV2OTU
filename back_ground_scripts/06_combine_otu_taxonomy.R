@@ -2,7 +2,7 @@
 # Combines mumu-curated OTU abundance table with taxonomy/bootstrap assignments.
 # Renames sample columns from bioinformatics IDs (S001...) back to original names.
 #
-# Usage: Rscript 06_combine_otu_taxonomy.R <proj_name> <primer_set> <working_dir>
+# Usage: Rscript 06_combine_otu_taxonomy.R <proj_name> <primer_set> <otu_table> <taxonomy_combined> <map_file> <output_file>
 
 # ------------------------------------------------------------------------------
 # Library paths — must be set before any library() calls
@@ -36,31 +36,22 @@ library(tibble)
 # ------------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 3) {
-  stop("Usage: Rscript 06_combine_otu_taxonomy.R <proj_name> <primer_set> <working_dir>")
+if (length(args) < 6) {
+  stop("Usage: Rscript 06_combine_otu_taxonomy.R <proj_name> <primer_set> <otu_table> <taxonomy_combined> <map_file> <output_file>")
 }
 
-PROJ       <- args[1]
-PRIMER_SET <- args[2]
-WORK_DIR   <- args[3]
+PROJ              <- args[1]
+PRIMER_SET        <- args[2]
+otu_table_file    <- args[3]
+tax_combined_file <- args[4]
+map_file          <- args[5]
+output_file       <- args[6]
 
-setwd(WORK_DIR)
-
-cat("Project name: ", PROJ, "\n")
-cat("Primer set:   ", PRIMER_SET, "\n")
-cat("Working dir:  ", WORK_DIR, "\n")
-
-# ------------------------------------------------------------------------------
-# Define input/output file names based on primer set
-# ------------------------------------------------------------------------------
-
-tax_combined_file <- paste0("Taxonomy_rdp_", PRIMER_SET, "_combined.txt")
-otu_table_file    <- paste0(PROJ, "_mumu_curated.txt")
-map_file          <- "Map_file.csv"
-output_file       <- paste0(PROJ, "_OTU_with_taxonomy_", PRIMER_SET, ".txt")
-
-cat("Taxonomy file: ", tax_combined_file, "\n")
+cat("Project name:  ", PROJ, "\n")
+cat("Primer set:    ", PRIMER_SET, "\n")
 cat("OTU table:     ", otu_table_file, "\n")
+cat("Taxonomy file: ", tax_combined_file, "\n")
+cat("Map file:      ", map_file, "\n")
 cat("Output file:   ", output_file, "\n")
 
 # ------------------------------------------------------------------------------
