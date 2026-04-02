@@ -35,14 +35,27 @@ EOF
 echo "  config.sh written."
 
 # ------------------------------------------------------------------------------
-# 2. Set SLURM email in the main script (one-time only)
+# 2. Install run_asv2otu command
 # ------------------------------------------------------------------------------
 
 echo ""
-echo "--- Configuring SLURM email ---"
-sed -i "s|#SBATCH --mail-user=.*|#SBATCH --mail-user=$USER_EMAIL|" \
-    "$REPO_DIR/ASVtoOTU_msiSLURM.sh"
-echo "  Email set in SLURM script."
+echo "--- Installing run_asv2otu command ---"
+
+chmod +x "$REPO_DIR/run_asv2otu.sh"
+mkdir -p "$HOME/bin"
+ln -sf "$REPO_DIR/run_asv2otu.sh" "$HOME/bin/run_asv2otu"
+echo "  Symlink created: ~/bin/run_asv2otu -> $REPO_DIR/run_asv2otu.sh"
+
+# Ensure ~/bin is on PATH in ~/.bashrc
+if ! grep -q 'export PATH="$HOME/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+    echo '' >> "$HOME/.bashrc"
+    echo '# Added by HTS_ASV2OTU setup' >> "$HOME/.bashrc"
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+    echo "  Added ~/bin to PATH in ~/.bashrc"
+    echo "  NOTE: Run 'source ~/.bashrc' or open a new terminal for run_asv2otu to be available."
+else
+    echo "  ~/bin already on PATH in ~/.bashrc"
+fi
 
 # ------------------------------------------------------------------------------
 # 3. Create conda environment
@@ -186,7 +199,7 @@ echo "============================================================"
 echo "  Setup complete!"
 echo ""
 echo "  Run the pipeline with:"
-echo "  sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
+echo "  run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
 echo ""
 echo "  Primer Set Options:"
 echo "  ITS1    - fungal ITS1 region (UNITE database, ITSx optional)"
@@ -204,7 +217,7 @@ echo "  EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the euk
 echo "  EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)"
 echo ""
 echo "  Example:"
-echo "  sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/ASVtable.tsv FAB2 ITS2"
+echo "  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2"
 echo ""
 echo "  NOTE: You need to be in the HTS_ASV2OTU/ directory (which contains the ASVtoOTU_msiSLURM.sh script) to run the sbatch command."
 echo " "

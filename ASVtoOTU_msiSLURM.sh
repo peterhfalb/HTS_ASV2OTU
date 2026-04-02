@@ -4,8 +4,8 @@
 # ASV to OTU Pipeline - SLURM Cluster Version (UMN MSI)
 # ==============================================================================
 #
-# USAGE: Navigate to directory of script then run the command
-#   sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
+# USAGE: Navigate to the HTS_ASV2OTU directory then run the command
+#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
 #
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
@@ -23,9 +23,12 @@
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 #
 # EXAMPLES:
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 16S-V4
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
+#
+# NOTE: Use run_asv2otu to submit — it reads your email from config.sh
+#       and passes it to sbatch automatically.
 #
 # ==============================================================================
 
@@ -37,7 +40,6 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH -p msismall
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=INSERTEMAILHEREviaSetupFile
 #SBATCH --output=pipeline_%j.out
 #SBATCH --error=pipeline_%j.err
 
@@ -71,7 +73,7 @@ export PATH=$HOME/packages:$PATH
 # ------------------------------------------------------------------------------
 
 if [ "$#" -lt 4 ]; then
-    echo "Usage: sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
+    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
     echo ""
     echo "  primer_set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
     echo "  --db options:       UNITE, SILVA, PR2, Maarjam, EukaryomeITS, EukaryomeSSU"

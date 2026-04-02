@@ -114,7 +114,7 @@ ssh -Y yourMSIusername@agate.msi.umn.edu
 cd pipelines/HTS_ASV2OTU/ # you can also use cd .. to go up a directory
 
 # submit the slurm job with the following commands:
-sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
+run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
 
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
@@ -132,9 +132,9 @@ sbatch ASVtoOTU_msiSLURM.sh <project_dir> <asv_table_path> <proj_name> <primer_s
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 
 # EXAMPLES:
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
-#   sbatch ASVtoOTU_msiSLURM.sh /path/to/project /path/to/table.tsv FAB2 16S-V4
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
 ```
 
 Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
