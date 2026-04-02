@@ -15,4 +15,11 @@ CONFIG="$SCRIPT_DIR/config.sh"
 source "$CONFIG"
 [ -n "${SLURM_EMAIL:-}" ] || { echo "ERROR: SLURM_EMAIL not set in config.sh"; exit 1; }
 
-sbatch --mail-user="$SLURM_EMAIL" "$SCRIPT_DIR/ASVtoOTU_msiSLURM.sh" "$@"
+PROJECT_DIR="${1:-}"
+[ -n "$PROJECT_DIR" ] || { echo "ERROR: project_dir argument is required."; echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"; exit 1; }
+[ -d "$PROJECT_DIR" ] || { echo "ERROR: project directory not found: $PROJECT_DIR"; exit 1; }
+
+sbatch --mail-user="$SLURM_EMAIL" \
+    --output="$PROJECT_DIR/pipeline_%j.out" \
+    --error="$PROJECT_DIR/pipeline_%j.err" \
+    "$SCRIPT_DIR/ASVtoOTU_msiSLURM.sh" "$@"
