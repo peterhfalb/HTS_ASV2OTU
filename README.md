@@ -48,7 +48,7 @@ bash setup.sh
 # then type into the prompt asking for your email, to setup your email for SLURM notifications
 # pipeline installation could take 10-15 minutes, but is only necessary the first time you run the pipeline
 ```
-This script does 3 things, *FIRST* it updates the path to reflect where the pipeline code is located on the cluster, *SECOND* it prompts you for your email, which will be used to send SLURM notifications when you run the script, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
+This script does 4 things: *FIRST* it records the path to the pipeline and prompts you for your email (used for SLURM notifications), *SECOND* it installs a `run_asv2otu` command in `~/bin` so you can run the pipeline from anywhere on the cluster, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
 
 **NOTE: It may take 10-15 minutes to install the necessary packages**
 
@@ -89,7 +89,7 @@ scp /path/to/your/ASVTABLE.txt yourMSIusername@agate.msi.umn.edu:/path/to/your/y
 
 **Step 2: Run the pipeline**
 
-To run the script, you need to ssh login to the cluster and go to the directory where the pipeline script is housed. Then, you will have to run the script with a SLURM submission, specifying 4-6 things:
+To run the script, ssh login to the cluster and run `run_asv2otu` from anywhere — no need to navigate to the pipeline directory. You will have to specify 4-6 things:
 1. Path to project directory
 2. Path to ASV table
 3. Project Name (this will determine how your output files are named)
@@ -105,15 +105,12 @@ Expect a runtime of 10-45 minutes. It should not go much longer than that, but t
 
 *Additionally, please avoid using taxonomic ranking names (e.g. Class, Order, etc.) as sample names in the input ASV table, as this will screw up the column filtering code*
 
-**Navigate to directory of script then run the command**
+**Run the pipeline from anywhere**
 ```bash
 # login to the cluster (fill in your UMN username)
 ssh -Y yourMSIusername@agate.msi.umn.edu 
 
-# navigate to the directory where you cloned and set up the pipeline scripts (HTS_ASV2OTU folder)
-cd pipelines/HTS_ASV2OTU/ # you can also use cd .. to go up a directory
-
-# submit the slurm job with the following commands:
+# submit the slurm job with the following command (run from anywhere):
 run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
 
 # PRIMER SET OPTIONS:
@@ -139,19 +136,17 @@ run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx
 
 Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
 
-**A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run the sbatch command, it submits the script as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a .out and .err file within the directory where the pipeline is stored. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
+**A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run `run_asv2otu`, it submits the job as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a `pipeline_JOBID.out` and `pipeline_JOBID.err` file in whichever directory you were in when you ran `run_asv2otu`. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
 
 **A note about reference databases:** Generally the default will probably work well, but for 18S AMF and microeukaryote data, the EukaryomeSSU dataset *may* get better taxonomic annotation. It might be worthwhile to test out using this database for taxonomy assignment. If you were feeling spicy, you could also test out using the EukaryomeITS database for taxonomy annotation of fungal ITS data, but at this point I can't comment on how it compares to UNITE taxonomy.
 
 After your job has started, you can watch its progress in real time using the following command:
 ```bash
-# first ensure you are still in the pipeline script folder on MSI
-# then run:
+# run from the same directory you were in when you ran run_asv2otu:
 tail -f pipeline_*.out
-
 ```
 
-This will show you a running output of what the pipeline is doing. If you have run the pipeline before, it will also show you log outputs from previous runs. It's not necessary to do this step, but if you want to track the pipeline in real time, this is an easy way to do it.
+This will show you a running output of what the pipeline is doing. It's not necessary to do this step, but if you want to track the pipeline in real time, this is an easy way to do it.
 
 After the pipeline is done, or if you want to exit the live view of whats happening, hit Control+C & Enter on Mac (not sure what the equivalent is for Windows).
 
