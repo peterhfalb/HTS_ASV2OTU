@@ -107,9 +107,9 @@ map_file <- read_csv(MAP_FILE_PATH, col_types = cols(.default = "c"))
 
 cat("\nRunning EukaryomeSSU reference taxonomy assignment...\n")
 
-silva_tax <- assignTaxonomy(
+eukaryome_tax <- assignTaxonomy(
   sequences,
-  SILVA_DB_PATH,
+  EUKARYOME_DB_PATH,
   taxLevels        = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"),
   multithread      = TRUE,
   outputBootstraps = TRUE,
