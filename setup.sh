@@ -64,29 +64,38 @@ REQUIRED ARGUMENTS:
                     18S-AMF   arbuscular mycorrhizal fungi 18S
 
 OPTIONS:
-  --skip-itsx     Skip ITSx extraction (ITS1/ITS2 only)
-                  Use this if your dataset includes synthetic mock community
-                  members that ITSx may incorrectly remove
-  --db <name>     Override the default taxonomy database. Options:
-                    UNITE        fungal ITS (default for ITS1/ITS2)
-                    SILVA        bacterial 16S (default for 16S-V4)
-                    PR2          eukaryote 18S (default for 18S-V4)
-                    Maarjam      AMF 18S (default for 18S-AMF)
-                    EukaryomeITS broader eukaryote ITS coverage
-                    EukaryomeSSU broader eukaryote 18S coverage
-  -h, --help      Show this help message and exit
+  --skip-itsx       Skip ITSx extraction (ITS1/ITS2 only)
+                    Use this if your dataset includes synthetic mock community
+                    members that ITSx may incorrectly remove
+  --db <name>       Override the default taxonomy database. Options:
+                      UNITE        fungal ITS (default for ITS1/ITS2)
+                      SILVA        bacterial 16S (default for 16S-V4)
+                      PR2          eukaryote 18S (default for 18S-V4)
+                      Maarjam      AMF 18S (default for 18S-AMF)
+                      EukaryomeITS broader eukaryote ITS coverage
+                      EukaryomeSSU broader eukaryote 18S coverage
+  --skip-amf-filter Skip SILVA-based Mucoromycota filtering (18S-AMF only)
+                    By default, 18S-AMF datasets are filtered to retain only
+                    sequences validated as Mucoromycota using SILVA. Use this
+                    flag to skip filtering and keep all MaarjAM assignments.
+  -h, --help        Show this help message and exit
 
 EXAMPLES:
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 16S-V4
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2 --skip-itsx
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-V4 --db EukaryomeSSU
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv AMF_data 18S-AMF
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv AMF_data 18S-AMF --skip-amf-filter
 
 NOTES:
   - SLURM notifications are sent to the email set during setup.sh
   - Output files are organised into subdirectories within project_dir
-  - The final OTU table will be at:
+  - For most datasets, the final OTU table will be at:
       project_dir/<proj_name>_OTU_with_taxonomy_<primer_set>.txt
-  - Run pipeline_run.log in project_dir for a full QC summary after completion
+  - For 18S-AMF datasets (with filtering enabled), two OTU tables are created:
+      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt
+      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt
+  - Check pipeline_run.log in project_dir for a full QC summary after completion
 
 HELP
 }
@@ -244,6 +253,7 @@ DB_FILES["UNITE (ITS1/ITS2 default)"]="sh_general_release_dynamic_all_19.02.2025
 DB_FILES["SILVA (16S-V4 default)"]="silva_nr99_v138.1_train_set.fa"
 DB_FILES["PR2 (18S-V4 default)"]="pr2_version_5.1.1_SSU_dada2.fasta"
 DB_FILES["Maarjam (18S-AMF default)"]="maarjam_dada2_SSU_2021.fasta"
+DB_FILES["SILVA fungi (18S-AMF filtering)"]="SILVA_SSUfungi_nr99_v138_2_toGenus_trainset.fasta"
 DB_FILES["EukaryomeITS (--db EukaryomeITS)"]="DADA2_EUK_ITS_v2.0_wKennedySynmock.fasta"
 DB_FILES["EukaryomeSSU (--db EukaryomeSSU)"]="DADA2_EUK_SSU_v2.0.fasta"
 
@@ -273,14 +283,19 @@ echo "============================================================"
 echo "  Setup complete!"
 echo ""
 echo "  Run the pipeline with:"
-echo "  run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
+echo "  run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [OPTIONS]"
 echo ""
 echo "  Primer Set Options:"
 echo "  ITS1    - fungal ITS1 region (UNITE database, ITSx optional)"
 echo "  ITS2    - fungal ITS2 region (UNITE database, ITSx optional)"
 echo "  16S-V4  - bacterial 16S V4 region (SILVA database, no ITSx)"
 echo "  18S-V4  - microeukaryote 18S V4 region (PR2 database, no ITSx)"
-echo "  18S-AMF - arbuscular mycorrhizal fungi 18S (MaarjAM database, no ITSx)"
+echo "  18S-AMF - arbuscular mycorrhizal fungi 18S (MaarjAM database with SILVA filtering)"
+echo ""
+echo "  OPTIONS:"
+echo "  --skip-itsx       - skip ITSx extraction (ITS1/ITS2 only)"
+echo "  --db <database>   - override default taxonomy database"
+echo "  --skip-amf-filter - skip SILVA-based Mucoromycota filtering (18S-AMF only)"
 echo ""
 echo "  DATABASE OPTIONS (if manually chosen, using flag --db):"
 echo "  SILVA        - bacteria SSU 16S rRNA sequences"
@@ -290,8 +305,12 @@ echo "  Maarjam      - AMF 18S SSU sequences"
 echo "  EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree"
 echo "  EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)"
 echo ""
-echo "  Example:"
+echo "  Examples:"
 echo "  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2"
+echo "  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-AMF"
+echo "  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-AMF --skip-amf-filter"
+echo ""
+echo "  Run 'run_asv2otu --help' for full documentation."
 echo ""
 echo "  NOTE: run_asv2otu can be run from any directory on the cluster."
 echo " "

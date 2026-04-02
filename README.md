@@ -118,14 +118,14 @@ Expect a runtime of 10-45 minutes. It should not go much longer than that, but t
 ssh -Y yourMSIusername@agate.msi.umn.edu 
 
 # submit the slurm job with the following command (run from anywhere):
-run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
+run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter]
 
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
 #   ITS2       — fungal ITS2 region (UNITE database, ITSx optional)
 #   16S-V4     — bacterial 16S V4 region (SILVA database, no ITSx)
 #   18S-V4     — microeukaryote 18S V4 region (PR2 database, no ITSx)
-#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, no ITSx)
+#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, with SILVA filtering)
 
 # DATABASE OPTIONS (if manually chosen, using flag --db):
 #   SILVA        - bacteria SSU 16S rRNA sequences
@@ -135,10 +135,16 @@ run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx
 #   EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 
+# FLAGS:
+#   --skip-itsx:        skip ITSx extraction (ITS1/ITS2 only)
+#   --skip-amf-filter:  skip SILVA-based Mucoromycota filtering (18S-AMF only, disabled by default for non-AMF datasets)
+
 # EXAMPLES:
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
+#   run_asv2otu /path/to/project /path/to/table.tsv AMF_data 18S-AMF
+#   run_asv2otu /path/to/project /path/to/table.tsv AMF_data 18S-AMF --skip-amf-filter
 ```
 
 Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
@@ -159,12 +165,19 @@ After the pipeline is done, or if you want to exit the live view of whats happen
 
 ## Output Files:
 
-The ASV to OTU pipeline will output a LOT of files (see below for descriptions of all), but you will likely be most interested in two:
+The ASV to OTU pipeline will output a LOT of files (see below for descriptions of all), but you will likely be most interested in:
 
-1. *ProjectName_OTU_with_taxonomy_PrimerSet.txt* -  This is your new data table, functionally equivalent to the input ASV table, but with OTU-level abundances with new taxonomic assignments. (ProjectName is your inputted project name, and PrimerSet will be your primer set)
-2. *pipeline_run.log* - This is a log file which has logged a. everything the pipeline did and b. what each of the steps removed. You will want to look at the "Pipeline Summary - Quality Control" section which tells you how many ASVs/OTUs were removed in each step of the process. 
+**For most datasets (ITS1, ITS2, 16S-V4, 18S-V4):**
+1. *ProjectName_OTU_with_taxonomy_PrimerSet.txt* - Your final data table with OTU-level abundances and taxonomic assignments
+2. *pipeline_run.log* - Log file summarizing all pipeline steps and quality control statistics
 
-The *pipeline_run.log* also summarizes other files you may be interested in.
+**For 18S-AMF datasets (with filtering enabled):**
+1. *ProjectName_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
+2. *ProjectName_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
+3. *05_taxonomy/AMF_filtering_summary.txt* - Detailed summary of filtering decisions
+4. *pipeline_run.log* - Log file with quality control statistics
+
+The *pipeline_run.log* summarizes other files you may be interested in.
 
 ## Summary of main pipeline steps:
 
@@ -191,6 +204,34 @@ It works in two steps. All sequences are blasted against each other. Sequences w
 After the OTUs have been created and curated, taxonomy is assigned to the centroid of each OTU using the exact same approach used by Trevor Gould in his DADA2 pipeline. This uses the *assignTaxonomy* function in DADA2, which uses the RDP Naive Bayesian classifier (doi: 10.1128/AEM.00062-07) to classify sequences. Taxonomy databases are unique to each primer (ITS1 and ITS2 have one database: UNITE sh) and are the same databases used by Trevor Gould to assign taxonomy. I have updated each taxonomy database to their most recent version, and they are located in the Kennedy lab shared taxonomy folder on the MSI computing cluster.
 
 This will likely take the longest of any step in the process -- somewhere between 5-45 minutes depending on how many OTUs there are, and the size of the reference database (PR2 takes the longest). 
+
+### Step 4 - AMF Dataset Filtering (18S-AMF datasets only)
+
+For 18S-AMF datasets, an optional quality-control filtering step is performed by default. This step uses a **dual-assignment approach** to validate and filter MaarjAM assignments:
+
+**Why dual assignment?**
+- **MaarjAM**: Specialized database for arbuscular mycorrhizal fungi (AMF), provides excellent species-level resolution for true AMF
+- **SILVA fungi-optimized**: Broad reference for validation, ensures sequences are actually fungi and belong to Mucoromycota
+
+**Filtering logic:**
+- Sequences are assigned taxonomy using both MaarjAM and a fungi-optimized SILVA database
+- MaarjAM assignments are **retained** only if:
+  - SILVA detects the sequence as **Fungi** (Kingdom) **AND**
+  - SILVA detects the sequence as **Mucoromycota** (Phylum) **AND**
+  - The Phylum-level bootstrap confidence is **≥ 50**
+- All other sequences are removed, with reasons documented
+
+**Output for 18S-AMF:**
+Two final OTU+taxonomy tables are provided, allowing you to choose which to use:
+1. **_unfiltered_MaarjAM.txt** - Standard MaarjAM assignments (all OTUs, no filtering). Use this if you want to include all sequences MaarjAM called as AMF, regardless of SILVA validation
+2. **_filtered_Mucoromycota.txt** - Filtered to Mucoromycota only (SILVA-validated). **Recommended** for conservative ecological inference, as it excludes sequences that may not be true AMF
+
+Additionally, a detailed filtering summary (**AMF_filtering_summary.txt**) is provided showing:
+- Each OTU's MaarjAM and SILVA assignments with bootstrap values
+- Whether it was kept or removed, and why
+- Overall statistics on how many sequences were filtered
+
+To skip this filtering step and keep all MaarjAM assignments, use the `--skip-amf-filter` flag.
 
 ## Citations
 

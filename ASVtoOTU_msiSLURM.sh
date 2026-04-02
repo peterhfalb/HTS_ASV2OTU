@@ -73,11 +73,12 @@ export PATH=$HOME/packages:$PATH
 # ------------------------------------------------------------------------------
 
 if [ "$#" -lt 4 ]; then
-    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"
+    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter]"
     echo ""
     echo "  primer_set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
     echo "  --db options:       UNITE, SILVA, PR2, Maarjam, EukaryomeITS, EukaryomeSSU"
     echo "  --skip-itsx:        skip ITSx extraction (ITS1/ITS2 only)"
+    echo "  --skip-amf-filter:  skip dual-assignment AMF filtering (18S-AMF only)"
     exit 1
 fi
 
@@ -88,12 +89,16 @@ PRIMER_SET="$4"
 
 # Parse optional flags
 SKIP_ITSX=false
+SKIP_AMF_FILTER=false
 DB_OVERRIDE=""
 
 for arg in "${@:5}"; do
     case "$arg" in
         --skip-itsx)
             SKIP_ITSX=true
+            ;;
+        --skip-amf-filter)
+            SKIP_AMF_FILTER=true
             ;;
         --db)
             # handled by next iteration — see below
@@ -103,7 +108,7 @@ for arg in "${@:5}"; do
             ;;
         *)
             echo "ERROR: Unrecognized argument: '$arg'"
-            echo "       Valid optional arguments: --skip-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>"
+            echo "       Valid optional arguments: --skip-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>, --skip-amf-filter"
             exit 1
             ;;
     esac
@@ -184,7 +189,11 @@ case "$DB_NAME" in
         ;;
 esac
 
+# SILVA fungi database for AMF filtering (separate from default taxonomy assignment DB)
+SILVA_FUNGI_DB="$DB_DIR/SILVA_SSUfungi_nr99_v138_2_toGenus_trainset.fasta"
+
 [ -f "$DB" ] || { echo "ERROR: Database file not found: $DB"; exit 1; }
+[ -f "$SILVA_FUNGI_DB" ] || { echo "ERROR: SILVA fungi database not found: $SILVA_FUNGI_DB"; exit 1; }
 
 if [ "$SKIP_ITSX" = true ]; then
     RUN_ITSX=false
@@ -262,6 +271,8 @@ plog "  Using $THREADS threads (SLURM allocation)"
 [ -f "$PIPELINE_DIR/back_ground_scripts/01_prepare_input.R" ]       || { echo "ERROR: 01_prepare_input.R not found"; exit 1; }
 [ -f "$PIPELINE_DIR/back_ground_scripts/03_build_otu_table.R" ]     || { echo "ERROR: 03_build_otu_table.R not found"; exit 1; }
 [ -f "$PIPELINE_DIR/back_ground_scripts/05_assign_taxonomy_rdp.R" ] || { echo "ERROR: 05_assign_taxonomy_rdp.R not found"; exit 1; }
+[ -f "$PIPELINE_DIR/back_ground_scripts/06_combine_otu_taxonomy.R" ] || { echo "ERROR: 06_combine_otu_taxonomy.R not found"; exit 1; }
+[ -f "$PIPELINE_DIR/back_ground_scripts/07_filter_amf_maarjam.R" ]   || { echo "ERROR: 07_filter_amf_maarjam.R not found"; exit 1; }
 
 # ------------------------------------------------------------------------------
 # Step 0: Create conda virtual environment (skip if already exists)
@@ -666,16 +677,74 @@ conda deactivate
 
 plog_section "Step 6: Combine OTU Table with Taxonomy"
 
+# For 18S-AMF datasets, output file will be named accordingly (unfiltered version created by Step 6)
+if [ "$PRIMER_SET" = "18S-AMF" ]; then
+    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt"
+else
+    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}.txt"
+fi
+
 $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/06_combine_otu_taxonomy.R" \
     "${PROJ}" \
     "${PRIMER_SET}" \
     "$DIR_MUMU/${PROJ}_mumu_curated.txt" \
     "$DIR_TAXONOMY/Taxonomy_rdp_${PRIMER_SET}_combined.txt" \
     "$DIR_INPUT/Map_file.csv" \
-    "$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}.txt" 2>&1 | tee -a "$LOG"
+    "$FINAL_OTU_TAX" 2>&1 | tee -a "$LOG"
 
-plog_file "$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}.txt" \
-    "Final output — OTU abundance table with original sample names and taxonomy"
+if [ "$PRIMER_SET" = "18S-AMF" ]; then
+    plog_file "$FINAL_OTU_TAX" \
+        "Unfiltered OTU table with MaarjAM taxonomy (before SILVA-based Mucoromycota filtering)"
+else
+    plog_file "$FINAL_OTU_TAX" \
+        "Final output — OTU abundance table with original sample names and taxonomy"
+fi
+
+# ------------------------------------------------------------------------------
+# Step 7: AMF Dataset Filtering (18S-AMF only, optional)
+# ------------------------------------------------------------------------------
+
+if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
+
+    plog_section "Step 7: AMF Mucoromycota Filtering"
+    plog "Running dual-assignment AMF filtering to validate MaarjAM with SILVA fungi reference..."
+
+    START=$(date +%s)
+
+    FILTERED_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt"
+    FILTER_SUMMARY="$DIR_TAXONOMY/AMF_filtering_summary.txt"
+
+    $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/07_filter_amf_maarjam.R" \
+        "${PROJ}" \
+        "$DIR_TAXONOMY/Taxonomy_rdp_18S-AMF_combined.txt" \
+        "$DIR_MUMU/Centroid_mumu_curated.fas" \
+        "$SILVA_FUNGI_DB" \
+        "$DIR_MUMU/${PROJ}_mumu_curated.txt" \
+        "$DIR_INPUT/Map_file.csv" \
+        "$FINAL_OTU_TAX" \
+        "$FILTERED_OTU_TAX" \
+        "$FILTER_SUMMARY" 2>&1 | tee -a "$LOG"
+
+    END=$(date +%s)
+    RUNTIME=$((END - START))
+
+    plog ""
+    plog "Step 7 completed in $(($RUNTIME / 60))m $(($RUNTIME % 60))s"
+    plog ""
+    plog_file "$FINAL_OTU_TAX" \
+        "UNFILTERED — OTU table with MaarjAM taxonomy (all OTUs, no filtering)"
+    plog_file "$FILTERED_OTU_TAX" \
+        "FILTERED — OTU table with MaarjAM taxonomy (Mucoromycota only, validated against SILVA fungi)"
+    plog_file "$FILTER_SUMMARY" \
+        "Filtering summary showing which sequences were retained/removed and why (detailed TSV)"
+
+elif [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = true ]; then
+    plog_section "Step 7: AMF Filtering"
+    plog "Skipped (--skip-amf-filter flag used)"
+    plog ""
+    plog_file "$FINAL_OTU_TAX" \
+        "Final output — OTU table with MaarjAM taxonomy (no filtering applied)"
+fi
 
 # ------------------------------------------------------------------------------
 # Pipeline Summary
@@ -718,7 +787,19 @@ plog_file "$DIR_TAXONOMY/Taxonomy_rdp_${PRIMER_SET}_bootstraps.txt" "Bootstrap c
 plog_file "$DIR_TAXONOMY/Taxonomy_rdp_${PRIMER_SET}_combined.txt"   "Taxonomy + bootstraps combined table"
 plog "  (top level)"
 plog_file "$PROJECT_DIR/pipeline_run.log"                           "This log file"
-plog_file "$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}.txt" "FINAL OUTPUT — OTU table with original sample names and taxonomy"
+
+if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
+    plog_file "$FINAL_OTU_TAX" \
+        "FINAL OUTPUT (UNFILTERED) — OTU table with MaarjAM taxonomy (all OTUs)"
+    plog_file "$FILTERED_OTU_TAX" \
+        "FINAL OUTPUT (FILTERED) — OTU table with MaarjAM taxonomy (Mucoromycota only, SILVA-validated)"
+    plog_file "$FILTER_SUMMARY" \
+        "Filtering summary — details on which OTUs were retained/removed and why"
+else
+    plog_file "$FINAL_OTU_TAX" \
+        "FINAL OUTPUT — OTU table with original sample names and taxonomy"
+fi
+
 plog ""
 plog "Run completed: $(date)"
 

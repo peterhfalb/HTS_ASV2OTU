@@ -84,6 +84,7 @@ tax <- assignTaxonomy(
   taxLevels        = tax_levels,
   multithread      = TRUE,
   outputBootstraps = TRUE,
+  tryRC            = grepl("^18S", PRIMER_SET),  # Use reverse complement for 18S primers
   verbose          = TRUE
 )
 
