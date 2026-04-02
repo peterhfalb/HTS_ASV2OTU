@@ -44,7 +44,7 @@ echo "--- Installing run_asv2otu command ---"
 mkdir -p "$HOME/bin"
 cat > "$HOME/bin/run_asv2otu" << WRAPPER
 #!/bin/bash
-bash "$REPO_DIR/run_asv2otu.sh" "\$@"
+. "$REPO_DIR/run_asv2otu.sh" "\$@"
 WRAPPER
 chmod +x "$HOME/bin/run_asv2otu"
 echo "  run_asv2otu installed to ~/bin/run_asv2otu"
