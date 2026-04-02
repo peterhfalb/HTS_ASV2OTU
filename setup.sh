@@ -44,7 +44,19 @@ echo "--- Installing run_asv2otu command ---"
 mkdir -p "$HOME/bin"
 cat > "$HOME/bin/run_asv2otu" << WRAPPER
 #!/bin/bash
-. "$REPO_DIR/run_asv2otu.sh" "\$@"
+PIPELINE_DIR="$REPO_DIR"
+CONFIG="\$PIPELINE_DIR/config.sh"
+[ -f "\$CONFIG" ] || { echo "ERROR: config.sh not found. Re-run setup.sh."; exit 1; }
+source "\$CONFIG"
+[ -n "\${SLURM_EMAIL:-}" ] || { echo "ERROR: SLURM_EMAIL not set in config.sh"; exit 1; }
+PROJECT_DIR="\${1:-}"
+[ -n "\$PROJECT_DIR" ] || { echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>]"; exit 1; }
+[ -d "\$PROJECT_DIR" ] || { echo "ERROR: project directory not found: \$PROJECT_DIR"; exit 1; }
+sbatch --mail-user="\$SLURM_EMAIL" \\
+    --output="\$PROJECT_DIR/pipeline_%j.out" \\
+    --error="\$PROJECT_DIR/pipeline_%j.err" \\
+    --export=ALL,PIPELINE_DIR="\$PIPELINE_DIR" \\
+    "\$PIPELINE_DIR/ASVtoOTU_msiSLURM.sh" "\$@"
 WRAPPER
 chmod +x "$HOME/bin/run_asv2otu"
 echo "  run_asv2otu installed to ~/bin/run_asv2otu"
