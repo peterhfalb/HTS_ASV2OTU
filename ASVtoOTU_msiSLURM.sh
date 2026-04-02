@@ -174,7 +174,7 @@ case "$DB_NAME" in
         DB="$DB_DIR/pr2_version_5.1.1_SSU_dada2.fasta"
         ;;
     Maarjam)
-        DB="$DB_DIR/maarjam_dada2.txt"
+        DB="$DB_DIR/maarjam_dada2_SSU_2021.fasta"
         ;;
     EukaryomeITS)
         DB="$DB_DIR/DADA2_EUK_ITS_v2.0_wKennedySynmock.fasta"
