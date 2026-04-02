@@ -41,14 +41,17 @@ echo "  config.sh written."
 echo ""
 echo "--- Installing run_asv2otu command ---"
 
-chmod +x "$REPO_DIR/run_asv2otu.sh"
 mkdir -p "$HOME/bin"
-ln -sf "$REPO_DIR/run_asv2otu.sh" "$HOME/bin/run_asv2otu"
-echo "  Symlink created: ~/bin/run_asv2otu -> $REPO_DIR/run_asv2otu.sh"
+cat > "$HOME/bin/run_asv2otu" << WRAPPER
+#!/bin/bash
+bash "$REPO_DIR/run_asv2otu.sh" "\$@"
+WRAPPER
+chmod +x "$HOME/bin/run_asv2otu"
+echo "  run_asv2otu installed to ~/bin/run_asv2otu"
 
-# Disable file mode tracking so chmod +x never blocks git pull
+# Disable file mode tracking so git pull is never blocked by permission changes
 git -C "$REPO_DIR" config core.fileMode false
-echo "  Git file mode tracking disabled (prevents chmod blocking git pull)"
+echo "  Git file mode tracking disabled"
 
 # Ensure ~/bin is on PATH in ~/.bash_profile (sourced by SSH login shells on MSI)
 # ~/.bashrc is not reliably sourced at login and conda init can override PATH additions there
