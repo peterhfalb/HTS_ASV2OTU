@@ -189,11 +189,12 @@ case "$DB_NAME" in
         ;;
 esac
 
-# SILVA fungi database for AMF filtering (separate from default taxonomy assignment DB)
-SILVA_FUNGI_DB="$DB_DIR/SILVA_SSUfungi_nr99_v138_2_toGenus_trainset.fasta"
+# Reference database for AMF filtering validation (separate from default taxonomy assignment DB)
+# Using EukaryomeSSU for broad eukaryote 18S coverage and better Mucoromycota calibration
+AMF_FILTER_DB="$DB_DIR/DADA2_EUK_SSU_v2.0.fasta"
 
 [ -f "$DB" ] || { echo "ERROR: Database file not found: $DB"; exit 1; }
-[ -f "$SILVA_FUNGI_DB" ] || { echo "ERROR: SILVA fungi database not found: $SILVA_FUNGI_DB"; exit 1; }
+[ -f "$AMF_FILTER_DB" ] || { echo "ERROR: AMF filtering reference database not found: $AMF_FILTER_DB"; exit 1; }
 
 if [ "$SKIP_ITSX" = true ]; then
     RUN_ITSX=false
@@ -707,7 +708,7 @@ fi
 if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
 
     plog_section "Step 7: AMF Mucoromycota Filtering"
-    plog "Running dual-assignment AMF filtering to validate MaarjAM with SILVA fungi reference..."
+    plog "Running dual-assignment AMF filtering to validate MaarjAM with EukaryomeSSU reference..."
 
     START=$(date +%s)
 
@@ -718,7 +719,7 @@ if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
         "${PROJ}" \
         "$DIR_TAXONOMY/Taxonomy_rdp_18S-AMF_combined.txt" \
         "$DIR_MUMU/Centroid_mumu_curated.fas" \
-        "$SILVA_FUNGI_DB" \
+        "$AMF_FILTER_DB" \
         "$DIR_MUMU/${PROJ}_mumu_curated.txt" \
         "$DIR_INPUT/Map_file.csv" \
         "$FINAL_OTU_TAX" \
@@ -734,9 +735,11 @@ if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
     plog_file "$FINAL_OTU_TAX" \
         "UNFILTERED — OTU table with MaarjAM taxonomy (all OTUs, no filtering)"
     plog_file "$FILTERED_OTU_TAX" \
-        "FILTERED — OTU table with MaarjAM taxonomy (Mucoromycota only, validated against SILVA fungi)"
+        "FILTERED — OTU table with MaarjAM taxonomy (Mucoromycota only, validated against EukaryomeSSU)"
     plog_file "$FILTER_SUMMARY" \
         "Filtering summary showing which sequences were retained/removed and why (detailed TSV)"
+    plog_file "$DIR_TAXONOMY/Taxonomy_EukaryomeSSU_validation_combined.txt" \
+        "EukaryomeSSU taxonomy assignments with bootstrap values (used for validation/filtering)"
 
 elif [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = true ]; then
     plog_section "Step 7: AMF Filtering"

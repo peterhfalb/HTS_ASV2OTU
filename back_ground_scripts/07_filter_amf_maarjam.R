@@ -1,12 +1,12 @@
-# AMF Dataset Filtering: MaarjAM vs Fungi-optimized SILVA
+# AMF Dataset Filtering: MaarjAM vs EukaryomeSSU
 #
 # Purpose: For 18S-AMF datasets, this script performs a secondary taxonomy assignment
-# using fungi-optimized SILVA and filters the MaarjAM assignments to retain only those
-# sequences detected as Mucoromycota by SILVA (with bootstrap >= 50).
+# using EukaryomeSSU (broad eukaryote 18S reference) and filters the MaarjAM assignments
+# to retain only those sequences detected as Mucoromycota by EukaryomeSSU (with bootstrap >= 50).
 #
 # This dual-assignment approach:
 # - Uses MaarjAM for detailed AMF identification (species-level resolution)
-# - Uses SILVA as a quality control to exclude non-Fungi and non-Mucoromycota sequences
+# - Uses EukaryomeSSU as a quality control to exclude non-Fungi and non-Mucoromycota sequences
 #
 # Output: Two final OTU+taxonomy files for user to choose from:
 #   1. Unfiltered (standard MaarjAM)
@@ -57,22 +57,27 @@ if (length(args) < 9) {
 PROJ             <- args[1]
 MAARJAM_TAX_PATH <- args[2]
 FASTA_PATH       <- args[3]
-SILVA_DB_PATH    <- args[4]
+EUKARYOME_DB_PATH <- args[4]
 OTU_TABLE_PATH   <- args[5]
 MAP_FILE_PATH    <- args[6]
 OUT_UNFILTERED   <- args[7]
 OUT_FILTERED     <- args[8]
 SUMMARY_PATH     <- args[9]
 
-cat("Project name:           ", PROJ, "\n")
-cat("MaarjAM taxonomy:       ", MAARJAM_TAX_PATH, "\n")
-cat("Input FASTA:            ", FASTA_PATH, "\n")
-cat("SILVA fungi database:   ", SILVA_DB_PATH, "\n")
-cat("OTU abundance table:    ", OTU_TABLE_PATH, "\n")
-cat("Map file:               ", MAP_FILE_PATH, "\n")
-cat("Output (unfiltered):    ", OUT_UNFILTERED, "\n")
-cat("Output (filtered):      ", OUT_FILTERED, "\n")
-cat("Summary report:         ", SUMMARY_PATH, "\n\n")
+# Derive taxonomy folder from summary_path (which is in the taxonomy folder)
+TAXONOMY_DIR <- dirname(SUMMARY_PATH)
+EUKARYOME_TAX_OUTPUT <- file.path(TAXONOMY_DIR, "Taxonomy_EukaryomeSSU_validation_combined.txt")
+
+cat("Project name:                    ", PROJ, "\n")
+cat("MaarjAM taxonomy:                ", MAARJAM_TAX_PATH, "\n")
+cat("Input FASTA:                     ", FASTA_PATH, "\n")
+cat("EukaryomeSSU reference DB:       ", EUKARYOME_DB_PATH, "\n")
+cat("OTU abundance table:             ", OTU_TABLE_PATH, "\n")
+cat("Map file:                        ", MAP_FILE_PATH, "\n")
+cat("Output (unfiltered):             ", OUT_UNFILTERED, "\n")
+cat("Output (filtered):               ", OUT_FILTERED, "\n")
+cat("Summary report:                  ", SUMMARY_PATH, "\n")
+cat("EukaryomeSSU validation output:  ", EUKARYOME_TAX_OUTPUT, "\n\n")
 
 # ------------------------------------------------------------------------------
 # Read input files
@@ -100,7 +105,7 @@ map_file <- read_csv(MAP_FILE_PATH, col_types = cols(.default = "c"))
 # Run SILVA taxonomy assignment on same centroid sequences
 # ------------------------------------------------------------------------------
 
-cat("\nRunning SILVA fungi reference taxonomy assignment...\n")
+cat("\nRunning EukaryomeSSU reference taxonomy assignment...\n")
 
 silva_tax <- assignTaxonomy(
   sequences,
@@ -112,10 +117,16 @@ silva_tax <- assignTaxonomy(
   verbose          = TRUE
 )
 
-# Extract SILVA assignments and bootstraps
-silva_table  <- data.frame(OTUId = seq_ids, silva_tax$tax, stringsAsFactors = FALSE)
-silva_boot   <- data.frame(OTUId = seq_ids, silva_tax$boot, stringsAsFactors = FALSE)
-colnames(silva_boot)[-(1)] <- paste0(colnames(silva_boot)[-(1)], "_boot")
+# Extract EukaryomeSSU assignments and bootstraps
+eukaryome_table  <- data.frame(OTUId = seq_ids, eukaryome_tax$tax, stringsAsFactors = FALSE)
+eukaryome_boot   <- data.frame(OTUId = seq_ids, eukaryome_tax$boot, stringsAsFactors = FALSE)
+colnames(eukaryome_boot)[-(1)] <- paste0(colnames(eukaryome_boot)[-(1)], "_bootstrap")
+
+# Build combined EukaryomeSSU table (for reference/validation)
+eukaryome_combined <- cbind(
+  eukaryome_table,
+  eukaryome_boot[, -1]  # drop OTUId since already present
+)
 
 # Build filtering summary table
 filter_summary <- data.frame(
@@ -124,34 +135,34 @@ filter_summary <- data.frame(
   maarjam_kingdom = maarjam_tax$Kingdom[match(seq_ids, maarjam_tax$OTUId)],
   maarjam_phylum = maarjam_tax$Phylum[match(seq_ids, maarjam_tax$OTUId)],
   maarjam_kingdom_boot = maarjam_tax$Kingdom_bootstrap[match(seq_ids, maarjam_tax$OTUId)],
-  silva_kingdom = silva_table$Kingdom,
-  silva_phylum = silva_table$Phylum,
-  silva_phylum_boot = silva_boot$Phylum_boot,
+  eukaryome_kingdom = eukaryome_table$Kingdom,
+  eukaryome_phylum = eukaryome_table$Phylum,
+  eukaryome_phylum_boot = eukaryome_boot$Phylum_bootstrap,
   stringsAsFactors = FALSE
 )
 
 # Determine filter decision
 filter_summary <- filter_summary %>%
   mutate(
-    Silva_Phylum_Numeric = as.numeric(silva_phylum_boot),
+    Eukaryome_Phylum_Numeric = as.numeric(eukaryome_phylum_boot),
     Filter_Decision = case_when(
-      is.na(silva_kingdom) | silva_kingdom == "" ~ "REMOVED",
-      silva_kingdom != "Fungi" ~ "REMOVED",
-      is.na(silva_phylum) | silva_phylum == "" ~ "REMOVED",
-      Silva_Phylum_Numeric < 50 ~ "REMOVED",
-      silva_phylum != "Mucoromycota" ~ "REMOVED",
+      is.na(eukaryome_kingdom) | eukaryome_kingdom == "" ~ "REMOVED",
+      eukaryome_kingdom != "Fungi" ~ "REMOVED",
+      is.na(eukaryome_phylum) | eukaryome_phylum == "" ~ "REMOVED",
+      Eukaryome_Phylum_Numeric < 50 ~ "REMOVED",
+      eukaryome_phylum != "Mucoromycota" ~ "REMOVED",
       TRUE ~ "KEPT"
     ),
     Reason = case_when(
-      is.na(silva_kingdom) | silva_kingdom == "" ~ "Unclassified_at_Kingdom",
-      silva_kingdom != "Fungi" ~ paste0("Non_Fungi_detected_as_", silva_kingdom),
-      is.na(silva_phylum) | silva_phylum == "" ~ "Unclassified_at_Phylum",
-      Silva_Phylum_Numeric < 50 ~ "Low_Phylum_bootstrap",
-      silva_phylum != "Mucoromycota" ~ paste0("Non_Mucoromycota_detected_as_", silva_phylum),
+      is.na(eukaryome_kingdom) | eukaryome_kingdom == "" ~ "Unclassified_at_Kingdom",
+      eukaryome_kingdom != "Fungi" ~ paste0("Non_Fungi_detected_as_", eukaryome_kingdom),
+      is.na(eukaryome_phylum) | eukaryome_phylum == "" ~ "Unclassified_at_Phylum",
+      Eukaryome_Phylum_Numeric < 50 ~ "Low_Phylum_bootstrap",
+      eukaryome_phylum != "Mucoromycota" ~ paste0("Non_Mucoromycota_detected_as_", eukaryome_phylum),
       TRUE ~ "Mucoromycota_Fungi"
     )
   ) %>%
-  select(-Silva_Phylum_Numeric)
+  select(-Eukaryome_Phylum_Numeric)
 
 cat("\nFiltering Summary:\n")
 kept_count <- sum(filter_summary$Filter_Decision == "KEPT")
@@ -174,8 +185,8 @@ if (removed_count > 0) {
 
 # Bootstrap distribution for kept sequences
 if (kept_count > 0) {
-  cat("\nSILVA Phylum (Mucoromycota) Bootstrap for KEPT sequences:\n")
-  kept_phylum_boots <- as.numeric(filter_summary$silva_phylum_boot[filter_summary$Filter_Decision == "KEPT"])
+  cat("\nEukaryomeSSU Phylum (Mucoromycota) Bootstrap for KEPT sequences:\n")
+  kept_phylum_boots <- as.numeric(filter_summary$eukaryome_phylum_boot[filter_summary$Filter_Decision == "KEPT"])
   cat("  Mean:   ", round(mean(kept_phylum_boots, na.rm = TRUE), 2), "\n")
   cat("  Median: ", round(median(kept_phylum_boots, na.rm = TRUE), 2), "\n")
   cat("  Min:    ", round(min(kept_phylum_boots, na.rm = TRUE), 2), "\n")
@@ -185,6 +196,12 @@ if (kept_count > 0) {
 # Write detailed filtering summary to TSV
 cat("\nWriting detailed filtering summary...\n")
 write_delim(filter_summary, SUMMARY_PATH, delim = "\t")
+
+# Write EukaryomeSSU taxonomy for reference/validation
+cat("Writing EukaryomeSSU validation taxonomy table...\n")
+write.table(eukaryome_combined,
+            EUKARYOME_TAX_OUTPUT,
+            sep = "\t", quote = FALSE, row.names = FALSE)
 
 # ------------------------------------------------------------------------------
 # Process OTU tables: Create filtered and unfiltered versions
@@ -236,6 +253,7 @@ write.table(final_filtered,
 
 cat("\nFiltering complete!\n")
 cat("Outputs written to:\n")
-cat("  Unfiltered: ", OUT_UNFILTERED, "\n")
-cat("  Filtered:   ", OUT_FILTERED, "\n")
-cat("  Summary:    ", SUMMARY_PATH, "\n")
+cat("  Unfiltered OTU table: ", OUT_UNFILTERED, "\n")
+cat("  Filtered OTU table:   ", OUT_FILTERED, "\n")
+cat("  Filtering summary:    ", SUMMARY_PATH, "\n")
+cat("  EukaryomeSSU validation taxonomy: ", EUKARYOME_TAX_OUTPUT, "\n")

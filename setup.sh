@@ -253,9 +253,8 @@ DB_FILES["UNITE (ITS1/ITS2 default)"]="sh_general_release_dynamic_all_19.02.2025
 DB_FILES["SILVA (16S-V4 default)"]="silva_nr99_v138.1_train_set.fa"
 DB_FILES["PR2 (18S-V4 default)"]="pr2_version_5.1.1_SSU_dada2.fasta"
 DB_FILES["Maarjam (18S-AMF default)"]="maarjam_dada2_SSU_2021.fasta"
-DB_FILES["SILVA fungi (18S-AMF filtering)"]="SILVA_SSUfungi_nr99_v138_2_toGenus_trainset.fasta"
 DB_FILES["EukaryomeITS (--db EukaryomeITS)"]="DADA2_EUK_ITS_v2.0_wKennedySynmock.fasta"
-DB_FILES["EukaryomeSSU (--db EukaryomeSSU)"]="DADA2_EUK_SSU_v2.0.fasta"
+DB_FILES["EukaryomeSSU (--db EukaryomeSSU, also used for 18S-AMF filtering)"]="DADA2_EUK_SSU_v2.0.fasta"
 
 ALL_DB_OK=true
 for db_label in "${!DB_FILES[@]}"; do

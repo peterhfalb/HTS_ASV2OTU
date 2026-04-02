@@ -174,8 +174,9 @@ The ASV to OTU pipeline will output a LOT of files (see below for descriptions o
 **For 18S-AMF datasets (with filtering enabled):**
 1. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
 2. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
-3. *05_taxonomy/AMF_filtering_summary.txt* - Detailed summary of filtering decisions
-4. *pipeline_run.log* - Log file with quality control statistics
+3. *05_taxonomy/AMF_filtering_summary.txt* - Detailed summary showing MaarjAM and EukaryomeSSU assignments for each OTU, filtering decisions, and removal reasons
+4. *05_taxonomy/Taxonomy_EukaryomeSSU_validation_combined.txt* - EukaryomeSSU taxonomy assignments with bootstrap values (for reference and understanding filtering decisions)
+5. *pipeline_run.log* - Log file with quality control statistics
 
 The *pipeline_run.log* summarizes other files you may be interested in.
 
@@ -211,13 +212,13 @@ For 18S-AMF datasets, an optional quality-control filtering step is performed by
 
 **Why dual assignment?**
 - **MaarjAM**: Specialized database for arbuscular mycorrhizal fungi (AMF), provides excellent species-level resolution for true AMF
-- **SILVA fungi-optimized**: Broad reference for validation, ensures sequences are actually fungi and belong to Mucoromycota
+- **EukaryomeSSU**: Broad eukaryote 18S reference for validation, ensures sequences are actually fungi and belong to Mucoromycota
 
 **Filtering logic:**
-- Sequences are assigned taxonomy using both MaarjAM and a fungi-optimized SILVA database
+- Sequences are assigned taxonomy using both MaarjAM and EukaryomeSSU (broad eukaryote reference)
 - MaarjAM assignments are **retained** only if:
-  - SILVA detects the sequence as **Fungi** (Kingdom) **AND**
-  - SILVA detects the sequence as **Mucoromycota** (Phylum) **AND**
+  - EukaryomeSSU detects the sequence as **Fungi** (Kingdom) **AND**
+  - EukaryomeSSU detects the sequence as **Mucoromycota** (Phylum) **AND**
   - The Phylum-level bootstrap confidence is **≥ 50**
 - All other sequences are removed, with reasons documented
 
