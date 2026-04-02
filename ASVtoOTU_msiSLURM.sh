@@ -679,9 +679,9 @@ plog_section "Step 6: Combine OTU Table with Taxonomy"
 
 # For 18S-AMF datasets, output file will be named accordingly (unfiltered version created by Step 6)
 if [ "$PRIMER_SET" = "18S-AMF" ]; then
-    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt"
+    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_${DB_NAME}_unfiltered.txt"
 else
-    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}.txt"
+    FINAL_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_${PRIMER_SET}_${DB_NAME}.txt"
 fi
 
 $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/06_combine_otu_taxonomy.R" \
@@ -711,7 +711,7 @@ if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
 
     START=$(date +%s)
 
-    FILTERED_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt"
+    FILTERED_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_${DB_NAME}_filtered_Mucoromycota.txt"
     FILTER_SUMMARY="$DIR_TAXONOMY/AMF_filtering_summary.txt"
 
     $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/07_filter_amf_maarjam.R" \

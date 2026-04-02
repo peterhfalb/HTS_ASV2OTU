@@ -91,10 +91,10 @@ NOTES:
   - SLURM notifications are sent to the email set during setup.sh
   - Output files are organised into subdirectories within project_dir
   - For most datasets, the final OTU table will be at:
-      project_dir/<proj_name>_OTU_with_taxonomy_<primer_set>.txt
+      project_dir/<proj_name>_OTU_with_taxonomy_<primer_set>_<database>.txt
   - For 18S-AMF datasets (with filtering enabled), two OTU tables are created:
-      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt
-      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt
+      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt
+      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt
   - Check pipeline_run.log in project_dir for a full QC summary after completion
 
 HELP

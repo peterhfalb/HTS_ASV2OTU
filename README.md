@@ -168,12 +168,12 @@ After the pipeline is done, or if you want to exit the live view of whats happen
 The ASV to OTU pipeline will output a LOT of files (see below for descriptions of all), but you will likely be most interested in:
 
 **For most datasets (ITS1, ITS2, 16S-V4, 18S-V4):**
-1. *ProjectName_OTU_with_taxonomy_PrimerSet.txt* - Your final data table with OTU-level abundances and taxonomic assignments
+1. *ProjectName_OTU_with_taxonomy_PrimerSet_DatabaseName.txt* - Your final data table with OTU-level abundances and taxonomic assignments
 2. *pipeline_run.log* - Log file summarizing all pipeline steps and quality control statistics
 
 **For 18S-AMF datasets (with filtering enabled):**
-1. *ProjectName_OTU_with_taxonomy_18S-AMF_unfiltered_MaarjAM.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
-2. *ProjectName_OTU_with_taxonomy_18S-AMF_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
+1. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
+2. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
 3. *05_taxonomy/AMF_filtering_summary.txt* - Detailed summary of filtering decisions
 4. *pipeline_run.log* - Log file with quality control statistics
 
