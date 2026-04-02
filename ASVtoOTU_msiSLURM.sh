@@ -49,7 +49,8 @@ set -euo pipefail
 # Load user configuration (PIPELINE_DIR, SLURM_EMAIL set by setup.sh)
 # ------------------------------------------------------------------------------
 
-CONFIG="$SLURM_SUBMIT_DIR/config.sh"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG="$SCRIPT_DIR/config.sh"
 [ -f "$CONFIG" ] || { echo "ERROR: config.sh not found. Run setup.sh first."; exit 1; }
 source "$CONFIG"
 [ -n "$PIPELINE_DIR" ] || { echo "ERROR: PIPELINE_DIR not set in config.sh"; exit 1; }
