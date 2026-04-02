@@ -49,11 +49,10 @@ set -euo pipefail
 # Load user configuration (PIPELINE_DIR, SLURM_EMAIL set by setup.sh)
 # ------------------------------------------------------------------------------
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG="$SCRIPT_DIR/config.sh"
-[ -f "$CONFIG" ] || { echo "ERROR: config.sh not found. Run setup.sh first."; exit 1; }
+[ -n "${PIPELINE_DIR:-}" ] || { echo "ERROR: PIPELINE_DIR not set. Submit via run_asv2otu, not sbatch directly."; exit 1; }
+CONFIG="$PIPELINE_DIR/config.sh"
+[ -f "$CONFIG" ] || { echo "ERROR: config.sh not found at $PIPELINE_DIR. Run setup.sh first."; exit 1; }
 source "$CONFIG"
-[ -n "$PIPELINE_DIR" ] || { echo "ERROR: PIPELINE_DIR not set in config.sh"; exit 1; }
 
 # ------------------------------------------------------------------------------
 # Load modules

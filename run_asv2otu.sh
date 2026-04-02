@@ -22,4 +22,5 @@ PROJECT_DIR="${1:-}"
 sbatch --mail-user="$SLURM_EMAIL" \
     --output="$PROJECT_DIR/pipeline_%j.out" \
     --error="$PROJECT_DIR/pipeline_%j.err" \
+    --export=ALL,PIPELINE_DIR="$SCRIPT_DIR" \
     "$SCRIPT_DIR/ASVtoOTU_msiSLURM.sh" "$@"
