@@ -46,15 +46,16 @@ mkdir -p "$HOME/bin"
 ln -sf "$REPO_DIR/run_asv2otu.sh" "$HOME/bin/run_asv2otu"
 echo "  Symlink created: ~/bin/run_asv2otu -> $REPO_DIR/run_asv2otu.sh"
 
-# Ensure ~/bin is on PATH in ~/.bashrc
-if ! grep -q 'export PATH="$HOME/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
-    echo '' >> "$HOME/.bashrc"
-    echo '# Added by HTS_ASV2OTU setup' >> "$HOME/.bashrc"
-    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
-    echo "  Added ~/bin to PATH in ~/.bashrc"
-    echo "  NOTE: Run 'source ~/.bashrc' or open a new terminal for run_asv2otu to be available."
+# Ensure ~/bin is on PATH in ~/.bash_profile (sourced by SSH login shells on MSI)
+# ~/.bashrc is not reliably sourced at login and conda init can override PATH additions there
+if ! grep -q 'export PATH="$HOME/bin:$PATH"' "$HOME/.bash_profile" 2>/dev/null; then
+    echo '' >> "$HOME/.bash_profile"
+    echo '# Added by HTS_ASV2OTU setup' >> "$HOME/.bash_profile"
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bash_profile"
+    echo "  Added ~/bin to PATH in ~/.bash_profile"
+    echo "  NOTE: Run 'source ~/.bash_profile' for run_asv2otu to be available in this session."
 else
-    echo "  ~/bin already on PATH in ~/.bashrc"
+    echo "  ~/bin already on PATH in ~/.bash_profile"
 fi
 
 # ------------------------------------------------------------------------------

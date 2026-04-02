@@ -47,6 +47,8 @@ cd HTS_ASV2OTU/
 bash setup.sh
 # then type into the prompt asking for your email, to setup your email for SLURM notifications
 # pipeline installation could take 10-15 minutes, but is only necessary the first time you run the pipeline
+# after setup completes, run the following to make run_asv2otu available in your current session:
+source ~/.bash_profile
 ```
 This script does 4 things: *FIRST* it records the path to the pipeline and prompts you for your email (used for SLURM notifications), *SECOND* it installs a `run_asv2otu` command in `~/bin` so you can run the pipeline from anywhere on the cluster, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
 
