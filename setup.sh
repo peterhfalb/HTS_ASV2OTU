@@ -46,6 +46,10 @@ mkdir -p "$HOME/bin"
 ln -sf "$REPO_DIR/run_asv2otu.sh" "$HOME/bin/run_asv2otu"
 echo "  Symlink created: ~/bin/run_asv2otu -> $REPO_DIR/run_asv2otu.sh"
 
+# Disable file mode tracking so chmod +x never blocks git pull
+git -C "$REPO_DIR" config core.fileMode false
+echo "  Git file mode tracking disabled (prevents chmod blocking git pull)"
+
 # Ensure ~/bin is on PATH in ~/.bash_profile (sourced by SSH login shells on MSI)
 # ~/.bashrc is not reliably sourced at login and conda init can override PATH additions there
 if ! grep -q 'export PATH="$HOME/bin:$PATH"' "$HOME/.bash_profile" 2>/dev/null; then
