@@ -5,7 +5,7 @@
 # Symlinked to ~/bin/run_asv2otu by setup.sh — run from anywhere.
 #
 # USAGE:
-#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>]
+#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>] [--mumu-blast-id <value>] [--mumu-ratio <value>]
 # =============================================================================
 
 SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
@@ -16,7 +16,7 @@ source "$CONFIG"
 [ -n "${SLURM_EMAIL:-}" ] || { echo "ERROR: SLURM_EMAIL not set in config.sh"; exit 1; }
 
 PROJECT_DIR="${1:-}"
-[ -n "$PROJECT_DIR" ] || { echo "ERROR: project_dir argument is required."; echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter]"; exit 1; }
+[ -n "$PROJECT_DIR" ] || { echo "ERROR: project_dir argument is required."; echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [OPTIONS]"; exit 1; }
 [ -d "$PROJECT_DIR" ] || { echo "ERROR: project directory not found: $PROJECT_DIR"; exit 1; }
 
 sbatch --mail-user="$SLURM_EMAIL" \

@@ -168,16 +168,20 @@ run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx]
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 
 # FLAGS:
-#   --run-itsx:         enable ITSx extraction (ITS1/ITS2 only; disabled by default)
+#   --run-itsx:           enable ITSx extraction (ITS1/ITS2 only; disabled by default)
+#   --db <database>:      override default taxonomy database
+#   --mumu-blast-id:      override mumu BLAST identity threshold (0-100; default: 94 for 16S, 84 for others)
+#   --mumu-ratio:         override mumu minimum_ratio (default: 100 for 16S, 1 for others)
 
 # EXAMPLES:
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --run-itsx
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4 --mumu-blast-id 90 --mumu-ratio 50
 #   run_asv2otu /path/to/project /path/to/table.tsv AMF_data 18S-AMF
 ```
 
-Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
+Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Add optional flags at the end to customize behavior (e.g., `--run-itsx`, `--mumu-blast-id`, `--mumu-ratio`).
 
 **A note about SBATCH/SLURM scripts if you are unfamiliar:** when you run `run_asv2otu`, it submits the job as a 'SLURM' submission to the computing cluster. This means the 'job' will get in a queue to eventually run. Depending on what time of day/week you submit it, it could take anywhere from 2 seconds to 30 minutes to initiate (usually towards the lower end in my experience). Once it starts, you will get an email saying it started. Next, you will either get an email that the script COMPLETED or FAILED. If it FAILED, it will specify an Exit Code number, usually 2. If it failed, contact me (Peter F) and I can help troubleshoot. Every time you run the pipeline, the job will output a `pipeline_JOBID.out` and `pipeline_JOBID.err` file into your project directory. You don't really need to worry about these files, UNLESS something fails, then both will be helpful for understanding what error was thrown/what went wrong.
 

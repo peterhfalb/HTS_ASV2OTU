@@ -5,7 +5,7 @@
 # ==============================================================================
 #
 # USAGE: Navigate to the HTS_ASV2OTU directory then run the command
-#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>]
+#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>] [--mumu-blast-id <value>] [--mumu-ratio <value>]
 #
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx disabled by default)
@@ -22,10 +22,17 @@
 #   EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree
 #
+# OPTIONAL FLAGS:
+#   --run-itsx            Enable ITSx extraction (ITS1/ITS2 only; disabled by default)
+#   --mumu-blast-id       Override mumu BLAST identity threshold (0-100; default: 94 for 16S, 84 for others)
+#   --mumu-ratio          Override mumu minimum_ratio (default: 100 for 16S, 1 for others)
+#
 # EXAMPLES:
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --run-itsx
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4 --mumu-blast-id 90 --mumu-ratio 50
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 18S-V4 --db EukaryomeSSU
 #
 # NOTE: Use run_asv2otu to submit — it reads your email from config.sh
 #       and passes it to sbatch automatically.
@@ -73,11 +80,13 @@ export PATH=$HOME/packages:$PATH
 # ------------------------------------------------------------------------------
 
 if [ "$#" -lt 4 ]; then
-    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--run-itsx] [--db <database>]"
+    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--run-itsx] [--db <database>] [--mumu-blast-id <value>] [--mumu-ratio <value>]"
     echo ""
     echo "  primer_set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
     echo "  --db options:       UNITE, SILVA, PR2, Maarjam, EukaryomeITS, EukaryomeSSU"
     echo "  --run-itsx:         enable ITSx extraction (ITS1/ITS2 only; disabled by default)"
+    echo "  --mumu-blast-id:    override mumu BLAST identity threshold (0-100; default: 94 for 16S, 84 for others)"
+    echo "  --mumu-ratio:       override mumu minimum_ratio (default: 100 for 16S, 1 for others)"
     exit 1
 fi
 
@@ -89,21 +98,37 @@ PRIMER_SET="$4"
 # Parse optional flags
 RUN_ITSX_FLAG=false
 DB_OVERRIDE=""
+MUMU_BLAST_ID_OVERRIDE=""
+MUMU_RATIO_OVERRIDE=""
 
-for arg in "${@:5}"; do
+shift 4  # shift past the first 4 positional arguments
+
+while [ $# -gt 0 ]; do
+    arg="$1"
     case "$arg" in
         --run-itsx)
             RUN_ITSX_FLAG=true
+            shift
             ;;
         --db)
-            # handled by next iteration — see below
+            DB_OVERRIDE="$2"
+            shift 2
+            ;;
+        --mumu-blast-id)
+            MUMU_BLAST_ID_OVERRIDE="$2"
+            shift 2
+            ;;
+        --mumu-ratio)
+            MUMU_RATIO_OVERRIDE="$2"
+            shift 2
             ;;
         UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU)
             DB_OVERRIDE="$arg"
+            shift
             ;;
         *)
             echo "ERROR: Unrecognized argument: '$arg'"
-            echo "       Valid optional arguments: --run-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>"
+            echo "       Valid optional arguments: --run-itsx, --db <database>, --mumu-blast-id <value>, --mumu-ratio <value>"
             exit 1
             ;;
     esac
@@ -530,16 +555,20 @@ sed -i 's/;.*//' "$DIR_MUMU/OTU_centroids"
 makeblastdb -in "$DIR_MUMU/OTU_centroids" -parse_seqids -dbtype nucl > /dev/null 2>&1
 
 # Set BLAST identity threshold for match list based on primer set
-case "$PRIMER_SET" in
-    16S-V4)
-        MUMU_BLAST_ID=94
-        ;;
-    *)
-        MUMU_BLAST_ID=84
-        ;;
-esac
-
-plog "  mumu BLAST identity threshold: $MUMU_BLAST_ID%"
+if [ -n "$MUMU_BLAST_ID_OVERRIDE" ]; then
+    MUMU_BLAST_ID="$MUMU_BLAST_ID_OVERRIDE"
+    plog "  mumu BLAST identity threshold: $MUMU_BLAST_ID% (custom override)"
+else
+    case "$PRIMER_SET" in
+        16S-V4)
+            MUMU_BLAST_ID=94
+            ;;
+        *)
+            MUMU_BLAST_ID=84
+            ;;
+    esac
+    plog "  mumu BLAST identity threshold: $MUMU_BLAST_ID%"
+fi
 
 blastn -db "$DIR_MUMU/OTU_centroids" \
     -outfmt '6 qseqid sseqid pident' \
@@ -553,16 +582,20 @@ awk 'BEGIN{FS=OFS="\t"} {sub(/;.*/, "", $1); print}' "$DIR_VSEARCH/${PROJ}.otuta
 
 # Set mumu minimum_ratio based on primer set
 # Bacteria (16S) requires higher minimum_ratio to prevent merging of distinct taxa
-case "$PRIMER_SET" in
-    16S-V4)
-        MUMU_MIN_RATIO=100
-        ;;
-    *)
-        MUMU_MIN_RATIO=1
-        ;;
-esac
-
-plog "  mumu minimum_ratio: $MUMU_MIN_RATIO"
+if [ -n "$MUMU_RATIO_OVERRIDE" ]; then
+    MUMU_MIN_RATIO="$MUMU_RATIO_OVERRIDE"
+    plog "  mumu minimum_ratio: $MUMU_MIN_RATIO (custom override)"
+else
+    case "$PRIMER_SET" in
+        16S-V4)
+            MUMU_MIN_RATIO=100
+            ;;
+        *)
+            MUMU_MIN_RATIO=1
+            ;;
+    esac
+    plog "  mumu minimum_ratio: $MUMU_MIN_RATIO"
+fi
 
 "$MUMU_BIN" \
     --otu_table "$DIR_MUMU/mumu_table.txt" \

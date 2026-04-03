@@ -67,7 +67,6 @@ OPTIONS:
   --run-itsx               Enable ITSx extraction (ITS1/ITS2 only)
                            By default, ITSx is disabled to preserve full-length ITS
                            sequences and avoid issues with synthetic mock communities.
-                           Use this flag to enable ITSx region extraction.
   --db <name>              Override the default taxonomy database. Options:
                              UNITE        fungal ITS (default for ITS1/ITS2)
                              SILVA        bacterial 16S (default for 16S-V4)
@@ -75,6 +74,10 @@ OPTIONS:
                              Maarjam      AMF 18S (default for 18S-AMF)
                              EukaryomeITS broader eukaryote ITS coverage
                              EukaryomeSSU broader eukaryote 18S coverage
+  --mumu-blast-id <value>  Override mumu BLAST identity threshold (0-100)
+                           Default: 94 for 16S-V4, 84 for others
+  --mumu-ratio <value>     Override mumu minimum_ratio parameter
+                           Default: 100 for 16S-V4, 1 for others
   -h, --help               Show this help message and exit
 
 EXAMPLES:
@@ -82,6 +85,7 @@ EXAMPLES:
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2 --run-itsx
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-V4 --db EukaryomeSSU
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 16S-V4 --mumu-blast-id 90 --mumu-ratio 50
   run_asv2otu /path/to/project /path/to/ASVtable.tsv AMF_data 18S-AMF
 
 NOTES:
@@ -89,9 +93,6 @@ NOTES:
   - Output files are organised into subdirectories within project_dir
   - For most datasets, the final OTU table will be at:
       project_dir/<proj_name>_OTU_with_taxonomy_<primer_set>_<database>.txt
-  - For 18S-AMF datasets (with filtering enabled), two OTU tables are created:
-      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt
-      project_dir/<proj_name>_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt
   - Check pipeline_run.log in project_dir for a full QC summary after completion
 
 HELP
@@ -291,6 +292,8 @@ echo ""
 echo "  OPTIONS:"
 echo "  --run-itsx        - enable ITSx extraction (ITS1/ITS2 only; disabled by default)"
 echo "  --db <database>   - override default taxonomy database"
+echo "  --mumu-blast-id <value>  Override mumu BLAST identity threshold (0-100). Default: 94 for 16S-V4, 84 for others"
+echo "  --mumu-ratio <value>     Override mumu minimum_ratio parameter (>0). Default: 100 for 16S-V4, 1 for others"
 echo ""
 echo "  DATABASE OPTIONS (if manually chosen, using flag --db):"
 echo "  SILVA        - bacteria SSU 16S rRNA sequences"
