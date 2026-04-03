@@ -5,26 +5,26 @@
 # ==============================================================================
 #
 # USAGE: Navigate to the HTS_ASV2OTU directory then run the command
-#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>]
+#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>]
 #
 # PRIMER SET OPTIONS:
-#   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
-#   ITS2       — fungal ITS2 region (UNITE database, ITSx optional)
+#   ITS1       — fungal ITS1 region (UNITE database, ITSx disabled by default)
+#   ITS2       — fungal ITS2 region (UNITE database, ITSx disabled by default)
 #   16S-V4     — bacterial 16S V4 region (SILVA database, no ITSx)
 #   18S-V4     — microeukaryote 18S V4 region (PR2 database, no ITSx)
-#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, no ITSx)
+#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database)
 #
 # DATABASE OPTIONS (if manually chosen, using flag --db):
 #   SILVA        - bacteria SSU 16S rRNA sequences
 #   UNITE        - fungal ITS1 and ITS2 regions
 #   PR2          - full-length SSU 18S sequences, covers whole eukaryote tree but with focus on protists
-#   Maarjam      - AMF 18S SSU sequences
+#   Maarjam      - AMF 18S SSU sequences (arbuscular mycorrhizal fungi)
 #   EukaryomeITS - ITS1 and ITS2 sequences with good coverage across the eukaryote tree
-#   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
+#   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree
 #
 # EXAMPLES:
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
-#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --run-itsx
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
 #
 # NOTE: Use run_asv2otu to submit — it reads your email from config.sh
@@ -232,8 +232,8 @@ plog "Database:      $DB ($DB_NAME)"
 if [ "$RUN_ITSX" = true ]; then
     plog "ITSx:          enabled (region: $ITSX_REGION)"
 else
-    if [[ "$PRIMER_SET" == ITS* ]] && [ "$SKIP_ITSX" = true ]; then
-        plog "ITSx:          skipped (--skip-itsx flag)"
+    if [[ "$PRIMER_SET" == ITS* ]]; then
+        plog "ITSx:          disabled (use --run-itsx to enable)"
     else
         plog "ITSx:          not applicable for $PRIMER_SET"
     fi
