@@ -119,14 +119,14 @@ top_hits <- top_hits %>%
     organism = str_extract(stitle, "\\[([^\\]]+)\\]$", group = 1),
     # Check if description contains Mucoromycota, Glomeromycota, or other AMF clues
     is_mucoromycota = case_when(
-      str_detect(stitle, "Mucoromycota|Mucoromycotina|mucoromycota", ignore.case = TRUE) ~ TRUE,
-      str_detect(organism, "Mucoromycota|Mucoromycotina|mucoromycota", ignore.case = TRUE) ~ TRUE,
+      str_detect(stitle, regex("Mucoromycota|Mucoromycotina|mucoromycota", ignore_case = TRUE)) ~ TRUE,
+      str_detect(organism, regex("Mucoromycota|Mucoromycotina|mucoromycota", ignore_case = TRUE)) ~ TRUE,
       # Also check organism names known to be Mucoromycota AMF
-      str_detect(organism, "Rhizophagus|Funneliformis|Septoglomus|Claroideoglomus|Diversispora|Paraglomus|Scutellospora|Gigaspora|Racocetra", ignore.case = TRUE) ~ TRUE,
+      str_detect(organism, regex("Rhizophagus|Funneliformis|Septoglomus|Claroideoglomus|Diversispora|Paraglomus|Scutellospora|Gigaspora|Racocetra", ignore_case = TRUE)) ~ TRUE,
       TRUE ~ FALSE
     ),
     # Check for uncultured/environmental
-    is_uncultured = str_detect(stitle, "uncultured|environmental|metagenome|clone|sample", ignore.case = TRUE),
+    is_uncultured = str_detect(stitle, regex("uncultured|environmental|metagenome|clone|sample", ignore_case = TRUE)),
     # Determine filter decision
     filter_decision = case_when(
       is.na(organism) | organism == "" ~ "REMOVED",
