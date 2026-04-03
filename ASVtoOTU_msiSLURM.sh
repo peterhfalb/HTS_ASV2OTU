@@ -189,12 +189,11 @@ case "$DB_NAME" in
         ;;
 esac
 
-# Reference database for AMF filtering validation (separate from default taxonomy assignment DB)
-# Using EukaryomeSSU for broad eukaryote 18S coverage and better Mucoromycota calibration
-AMF_FILTER_DB="$DB_DIR/DADA2_EUK_SSU_v2.0.fasta"
+# BLAST database for AMF filtering (curated 18S fungal sequences, type/reference material)
+AMF_FILTER_BLAST_DB="/common/bioref/blast/blast_update_12_2025/18S_fungal_sequences"
 
 [ -f "$DB" ] || { echo "ERROR: Database file not found: $DB"; exit 1; }
-[ -f "$AMF_FILTER_DB" ] || { echo "ERROR: AMF filtering reference database not found: $AMF_FILTER_DB"; exit 1; }
+[ -f "${AMF_FILTER_BLAST_DB}.nin" ] || { echo "ERROR: BLAST database not found: $AMF_FILTER_BLAST_DB"; exit 1; }
 
 if [ "$SKIP_ITSX" = true ]; then
     RUN_ITSX=false
@@ -273,7 +272,7 @@ plog "  Using $THREADS threads (SLURM allocation)"
 [ -f "$PIPELINE_DIR/back_ground_scripts/03_build_otu_table.R" ]     || { echo "ERROR: 03_build_otu_table.R not found"; exit 1; }
 [ -f "$PIPELINE_DIR/back_ground_scripts/05_assign_taxonomy_rdp.R" ] || { echo "ERROR: 05_assign_taxonomy_rdp.R not found"; exit 1; }
 [ -f "$PIPELINE_DIR/back_ground_scripts/06_combine_otu_taxonomy.R" ] || { echo "ERROR: 06_combine_otu_taxonomy.R not found"; exit 1; }
-[ -f "$PIPELINE_DIR/back_ground_scripts/07_filter_amf_maarjam.R" ]   || { echo "ERROR: 07_filter_amf_maarjam.R not found"; exit 1; }
+[ -f "$PIPELINE_DIR/back_ground_scripts/08_blast_filter_amf.R" ]     || { echo "ERROR: 08_blast_filter_amf.R not found"; exit 1; }
 
 # ------------------------------------------------------------------------------
 # Step 0: Create conda virtual environment (skip if already exists)
@@ -707,21 +706,37 @@ fi
 
 if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
 
-    plog_section "Step 7: AMF Mucoromycota Filtering"
-    plog "Running dual-assignment AMF filtering to validate MaarjAM with EukaryomeSSU reference..."
+    plog_section "Step 7: AMF BLAST-based Mucoromycota Filtering"
+    plog "Running BLAST-based filtering to validate MaarjAM assignments against 18S fungal reference..."
 
     START=$(date +%s)
 
+    BLAST_OUTPUT="$DIR_TAXONOMY/AMF_BLAST_results.txt"
     FILTERED_OTU_TAX="$PROJECT_DIR/${PROJ}_OTU_with_taxonomy_18S-AMF_${DB_NAME}_filtered_Mucoromycota.txt"
-    FILTER_SUMMARY="$DIR_TAXONOMY/AMF_filtering_summary.txt"
+    FILTER_SUMMARY="$DIR_TAXONOMY/AMF_BLAST_filtering_summary.txt"
 
-    $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/07_filter_amf_maarjam.R" \
+    # Run BLAST against 18S fungal sequences (90% identity, E-value < 1e-50)
+    plog "  Running BLAST queries..."
+    blastn -task megablast \
+        -query "$DIR_MUMU/Centroid_mumu_curated.fas" \
+        -db "$AMF_FILTER_BLAST_DB" \
+        -out "$BLAST_OUTPUT" \
+        -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle" \
+        -perc_identity 90 \
+        -evalue 1e-50 \
+        -max_target_seqs 1 \
+        -num_threads $THREADS 2>&1 | tee -a "$LOG"
+
+    plog "  BLAST complete. Processing results..."
+
+    # Run R script to parse BLAST results and create filtered OTU tables
+    $RSCRIPT "$PIPELINE_DIR/back_ground_scripts/08_blast_filter_amf.R" \
         "${PROJ}" \
         "$DIR_TAXONOMY/Taxonomy_rdp_18S-AMF_combined.txt" \
         "$DIR_MUMU/Centroid_mumu_curated.fas" \
-        "$AMF_FILTER_DB" \
         "$DIR_MUMU/${PROJ}_mumu_curated.txt" \
         "$DIR_INPUT/Map_file.csv" \
+        "$BLAST_OUTPUT" \
         "$FINAL_OTU_TAX" \
         "$FILTERED_OTU_TAX" \
         "$FILTER_SUMMARY" 2>&1 | tee -a "$LOG"
@@ -735,11 +750,11 @@ if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
     plog_file "$FINAL_OTU_TAX" \
         "UNFILTERED — OTU table with MaarjAM taxonomy (all OTUs, no filtering)"
     plog_file "$FILTERED_OTU_TAX" \
-        "FILTERED — OTU table with MaarjAM taxonomy (Mucoromycota only, validated against EukaryomeSSU)"
+        "FILTERED — OTU table with MaarjAM taxonomy (Mucoromycota only, BLAST-validated)"
     plog_file "$FILTER_SUMMARY" \
-        "Filtering summary showing which sequences were retained/removed and why (detailed TSV)"
-    plog_file "$DIR_TAXONOMY/Taxonomy_EukaryomeSSU_validation_combined.txt" \
-        "EukaryomeSSU taxonomy assignments with bootstrap values (used for validation/filtering)"
+        "BLAST filtering summary with all hits, organism identification, and filtering decisions (TSV)"
+    plog_file "$BLAST_OUTPUT" \
+        "Raw BLAST output (90% identity, E-value < 1e-50)"
 
 elif [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = true ]; then
     plog_section "Step 7: AMF Filtering"

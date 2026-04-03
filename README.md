@@ -174,8 +174,8 @@ The ASV to OTU pipeline will output a LOT of files (see below for descriptions o
 **For 18S-AMF datasets (with filtering enabled):**
 1. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
 2. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
-3. *05_taxonomy/AMF_filtering_summary.txt* - Detailed summary showing MaarjAM and EukaryomeSSU assignments for each OTU, filtering decisions, and removal reasons
-4. *05_taxonomy/Taxonomy_EukaryomeSSU_validation_combined.txt* - EukaryomeSSU taxonomy assignments with bootstrap values (for reference and understanding filtering decisions)
+3. *05_taxonomy/AMF_BLAST_filtering_summary.txt* - Detailed BLAST results showing each OTU's top hit, organism identification, identity %, E-value, and filtering decision
+4. *05_taxonomy/AMF_BLAST_results.txt* - Raw BLAST output in tabular format
 5. *pipeline_run.log* - Log file with quality control statistics
 
 The *pipeline_run.log* summarizes other files you may be interested in.
@@ -206,31 +206,33 @@ After the OTUs have been created and curated, taxonomy is assigned to the centro
 
 This will likely take the longest of any step in the process -- somewhere between 5-45 minutes depending on how many OTUs there are, and the size of the reference database (PR2 takes the longest). 
 
-### Step 4 - AMF Dataset Filtering (18S-AMF datasets only)
+### Step 7 - AMF Dataset BLAST-based Filtering (18S-AMF datasets only)
 
-For 18S-AMF datasets, an optional quality-control filtering step is performed by default. This step uses a **dual-assignment approach** to validate and filter MaarjAM assignments:
+For 18S-AMF datasets, an optional quality-control filtering step is performed by default. This step uses **BLAST-based validation** against a curated 18S fungal reference to validate MaarjAM assignments:
 
-**Why dual assignment?**
+**Why BLAST validation?**
 - **MaarjAM**: Specialized database for arbuscular mycorrhizal fungi (AMF), provides excellent species-level resolution for true AMF
-- **EukaryomeSSU**: Broad eukaryote 18S reference for validation, ensures sequences are actually fungi and belong to Mucoromycota
+- **18S Fungal Reference (NCBI curated)**: GenBank's curated fungal 18S sequences (type and reference material only; 3,879 sequences updated Dec 2025). Used as a validation step to ensure sequences are actually Mucoromycota
 
-**Filtering logic:**
-- Sequences are assigned taxonomy using both MaarjAM and EukaryomeSSU (broad eukaryote reference)
+**Filtering approach:**
+- OTU centroids are BLASTed against the 18S fungal reference (90% identity, E-value < 10⁻⁵⁰)
+- The **top BLAST hit** is examined for each OTU
 - MaarjAM assignments are **retained** only if:
-  - EukaryomeSSU detects the sequence as **Fungi** (Kingdom) **AND**
-  - EukaryomeSSU detects the sequence as **Mucoromycota** (Phylum) **AND**
-  - The Phylum-level bootstrap confidence is **≥ 50**
+  - BLAST finds a match in the 18S fungal database **AND**
+  - The top hit is identified as **Mucoromycota** in GenBank (checked against organism name and sequence description) **AND**
+  - The hit is not marked as uncultured/environmental in the GenBank record
 - All other sequences are removed, with reasons documented
 
 **Output for 18S-AMF:**
 Two final OTU+taxonomy tables are provided, allowing you to choose which to use:
-1. **_unfiltered_MaarjAM.txt** - Standard MaarjAM assignments (all OTUs, no filtering). Use this if you want to include all sequences MaarjAM called as AMF, regardless of SILVA validation
-2. **_filtered_Mucoromycota.txt** - Filtered to Mucoromycota only (SILVA-validated). **Recommended** for conservative ecological inference, as it excludes sequences that may not be true AMF
+1. **_MaarjAM_unfiltered.txt** - Standard MaarjAM assignments (all OTUs, no filtering). Use this if you want to include all sequences MaarjAM called as AMF
+2. **_MaarjAM_filtered_Mucoromycota.txt** - Filtered to Mucoromycota only (BLAST-validated). **Recommended** for conservative ecological inference, as it only includes sequences confirmed to be Mucoromycota
 
-Additionally, a detailed filtering summary (**AMF_filtering_summary.txt**) is provided showing:
-- Each OTU's MaarjAM and SILVA assignments with bootstrap values
+Additionally, a detailed BLAST filtering summary (**AMF_BLAST_filtering_summary.txt**) is provided showing:
+- Each OTU's top BLAST hit with organism name, identity percentage, and E-value
 - Whether it was kept or removed, and why
-- Overall statistics on how many sequences were filtered
+- Overall statistics on filtering results
+- Raw BLAST output file also saved for reference
 
 To skip this filtering step and keep all MaarjAM assignments, use the `--skip-amf-filter` flag.
 
