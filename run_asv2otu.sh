@@ -5,7 +5,7 @@
 # Symlinked to ~/bin/run_asv2otu by setup.sh — run from anywhere.
 #
 # USAGE:
-#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter] [--skip-mock-community]
+#   run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>]
 # =============================================================================
 
 SCRIPT_DIR="${BASH_SOURCE[0]%/*}"

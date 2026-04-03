@@ -106,11 +106,7 @@ To run the script, ssh login to the cluster and run `run_asv2otu` from anywhere 
 
 Expect a runtime of 10-45 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
 
-*ITSx is a program which removes the highly conserved regions flanking the ITS variable region. ITS primers often pick up these conserved regions, which can artificially inflate the sequence similarity (clustering) between different ITS ASVs. The pipeline will automatically run ITSx for ITS primer sets.*
-
-**Handling synthetic mock communities (synmock):** By default, the pipeline automatically recovers standard synmock sequences (synmock_1 through synmock_12) that ITSx filters out, since it cannot identify them as natural ITS regions. This keeps the benefits of ITSx's region extraction while preserving your positive control.
-
-If you want to disable synmock recovery (e.g., if using a custom mock community), use the `--skip-mock-community` flag. Alternatively, if you want to skip ITSx entirely and preserve the full ITS region, use `--skip-itsx`.*
+*ITSx is a program which removes the highly conserved regions flanking the ITS variable region. While this can improve clustering by preventing inflated similarity from conserved regions, ITSx can also remove or truncate sequences with non-standard ITS structures, including synthetic mock community members. **By default, ITSx is disabled to preserve full-length ITS sequences and avoid issues with mock communities.** If your dataset does not include synthetic controls and you want the benefits of ITS region extraction, use the `--run-itsx` flag to enable it.*
 
 *Additionally, please avoid using taxonomic ranking names (e.g. Class, Order, etc.) as sample names in the input ASV table, as this will screw up the column filtering code*
 
@@ -120,14 +116,14 @@ If you want to disable synmock recovery (e.g., if using a custom mock community)
 ssh -Y yourMSIusername@agate.msi.umn.edu 
 
 # submit the slurm job with the following command (run from anywhere):
-run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter] [--skip-mock-community]
+run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--run-itsx] [--db <database>]
 
 # PRIMER SET OPTIONS:
-#   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)
-#   ITS2       — fungal ITS2 region (UNITE database, ITSx optional)
+#   ITS1       — fungal ITS1 region (UNITE database, ITSx disabled by default)
+#   ITS2       — fungal ITS2 region (UNITE database, ITSx disabled by default)
 #   16S-V4     — bacterial 16S V4 region (SILVA database, no ITSx)
 #   18S-V4     — microeukaryote 18S V4 region (PR2 database, no ITSx)
-#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database, with SILVA filtering)
+#   18S-AMF    — arbuscular mycorrhizal fungi 18S (MaarjAM database)
 
 # DATABASE OPTIONS (if manually chosen, using flag --db):
 #   SILVA        - bacteria SSU 16S rRNA sequences
@@ -138,15 +134,13 @@ run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx
 #   EukaryomeSSU - 18S SSU sequences with good coverage across the eukaryote tree (especially for AMF?)
 
 # FLAGS:
-#   --skip-itsx:        skip ITSx extraction (ITS1/ITS2 only)
-#   --skip-amf-filter:  skip SILVA-based Mucoromycota filtering (18S-AMF only, disabled by default for non-AMF datasets)
+#   --run-itsx:         enable ITSx extraction (ITS1/ITS2 only; disabled by default)
 
 # EXAMPLES:
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2
-#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --skip-itsx
+#   run_asv2otu /path/to/project /path/to/table.tsv FAB2 ITS2 --run-itsx
 #   run_asv2otu /path/to/project /path/to/table.tsv FAB2 16S-V4
 #   run_asv2otu /path/to/project /path/to/table.tsv AMF_data 18S-AMF
-#   run_asv2otu /path/to/project /path/to/table.tsv AMF_data 18S-AMF --skip-amf-filter
 ```
 
 Replace the arguments above in <> with your filepaths, project name and primer set (exclude the <>), with a single space between each argument. Run the flag --skip-itsx at the end to skip the ITSx step.
@@ -173,12 +167,6 @@ The ASV to OTU pipeline will output a LOT of files (see below for descriptions o
 1. *ProjectName_OTU_with_taxonomy_PrimerSet_DatabaseName.txt* - Your final data table with OTU-level abundances and taxonomic assignments
 2. *pipeline_run.log* - Log file summarizing all pipeline steps and quality control statistics
 
-**For 18S-AMF datasets (with filtering enabled):**
-1. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_unfiltered.txt* - All OTUs with MaarjAM taxonomy (unfiltered)
-2. *ProjectName_OTU_with_taxonomy_18S-AMF_MaarjAM_filtered_Mucoromycota.txt* - OTUs filtered to Mucoromycota only (**recommended for ecological inference**)
-3. *05_taxonomy/AMF_BLAST_filtering_summary.txt* - Detailed BLAST results showing each OTU's top hit, organism identification, identity %, E-value, and filtering decision
-4. *05_taxonomy/AMF_BLAST_results.txt* - Raw BLAST output in tabular format
-5. *pipeline_run.log* - Log file with quality control statistics
 
 The *pipeline_run.log* summarizes other files you may be interested in.
 
@@ -208,35 +196,7 @@ After the OTUs have been created and curated, taxonomy is assigned to the centro
 
 This will likely take the longest of any step in the process -- somewhere between 5-45 minutes depending on how many OTUs there are, and the size of the reference database (PR2 takes the longest). 
 
-### Step 7 - AMF Dataset BLAST-based Filtering (18S-AMF datasets only)
-
-For 18S-AMF datasets, an optional quality-control filtering step is performed by default. This step uses **BLAST-based validation** against a curated 18S fungal reference to validate MaarjAM assignments:
-
-**Why BLAST validation?**
-- **MaarjAM**: Specialized database for arbuscular mycorrhizal fungi (AMF), provides excellent species-level resolution for true AMF
-- **18S Fungal Reference (NCBI curated)**: GenBank's curated fungal 18S sequences (type and reference material only; 3,879 sequences updated Dec 2025). Used as a validation step to ensure sequences are actually Mucoromycota
-
-**Filtering approach:**
-- OTU centroids are BLASTed against the 18S fungal reference (90% identity, E-value < 10⁻⁵⁰)
-- The **top BLAST hit** is examined for each OTU
-- MaarjAM assignments are **retained** only if:
-  - BLAST finds a match in the 18S fungal database **AND**
-  - The top hit is identified as **Mucoromycota** in GenBank (checked against organism name and sequence description) **AND**
-  - The hit is not marked as uncultured/environmental in the GenBank record
-- All other sequences are removed, with reasons documented
-
-**Output for 18S-AMF:**
-Two final OTU+taxonomy tables are provided, allowing you to choose which to use:
-1. **_MaarjAM_unfiltered.txt** - Standard MaarjAM assignments (all OTUs, no filtering). Use this if you want to include all sequences MaarjAM called as AMF
-2. **_MaarjAM_filtered_Mucoromycota.txt** - Filtered to Mucoromycota only (BLAST-validated). **Recommended** for conservative ecological inference, as it only includes sequences confirmed to be Mucoromycota
-
-Additionally, a detailed BLAST filtering summary (**AMF_BLAST_filtering_summary.txt**) is provided showing:
-- Each OTU's top BLAST hit with organism name, identity percentage, and E-value
-- Whether it was kept or removed, and why
-- Overall statistics on filtering results
-- Raw BLAST output file also saved for reference
-
-To skip this filtering step and keep all MaarjAM assignments, use the `--skip-amf-filter` flag.
+**NOTE:** An important note about AMF taxonomy assignment - because the MaarjAM database includes ONLY AMF sequences, DADA2 can ONLY assign sequences as AMF. As such, a lot of OTUs which are definitely not AMF will be assigned to Mucoromycota/Glomeromycota with high bootstrap confidence. I would take all these assignments with a grain of salt, and my recommendation would be to only use Genus/Virtual Taxa assignments that have high confidence, or maybe Family-level assignments with high bootstrap. If you have suggestions for improving AMF filtering, please let me know as I am very open to suggestions!
 
 ## Citations
 
