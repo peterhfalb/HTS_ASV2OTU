@@ -756,17 +756,8 @@ plog_file "$DIR_TAXONOMY/Taxonomy_rdp_${PRIMER_SET}_combined.txt"   "Taxonomy + 
 plog "  (top level)"
 plog_file "$PROJECT_DIR/pipeline_run.log"                           "This log file"
 
-if [ "$PRIMER_SET" = "18S-AMF" ] && [ "$SKIP_AMF_FILTER" = false ]; then
-    plog_file "$FINAL_OTU_TAX" \
-        "FINAL OUTPUT (UNFILTERED) — OTU table with MaarjAM taxonomy (all OTUs)"
-    plog_file "$FILTERED_OTU_TAX" \
-        "FINAL OUTPUT (FILTERED) — OTU table with MaarjAM taxonomy (Mucoromycota only, SILVA-validated)"
-    plog_file "$FILTER_SUMMARY" \
-        "Filtering summary — details on which OTUs were retained/removed and why"
-else
-    plog_file "$FINAL_OTU_TAX" \
-        "FINAL OUTPUT — OTU table with original sample names and taxonomy"
-fi
+plog_file "$FINAL_OTU_TAX" \
+    "FINAL OUTPUT — OTU table with original sample names and taxonomy"
 
 plog ""
 plog "Run completed: $(date)"
