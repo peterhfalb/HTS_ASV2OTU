@@ -47,7 +47,7 @@ cd HTS_ASV2OTU/
 bash setup.sh
 # then type into the prompt asking for your email, to setup your email for SLURM notifications
 # pipeline installation could take 10-15 minutes, but is only necessary the first time you run the pipeline
-# after setup completes, either log out and log back in, or run the following to activate run_asv2otu in your current session:
+# after setup completes, either log out and log back in of ssh (using command 'exit'), or run the following to activate run_asv2otu in your current session:
 source ~/.bash_profile
 ```
 This script does 4 things: *FIRST* it records the path to the pipeline and prompts you for your email (used for SLURM notifications), *SECOND* it installs a `run_asv2otu` command in `~/bin` so you can run the pipeline from anywhere on the cluster, *THIRD* it installs all the packages needed to run the pipeline, and *FOURTH* it checks to make sure the taxonomy database files are correctly located within the Kennedy Lab shared directory. Package installation happens now because it is the most likely step in the pipeline where errors are going to occur. I have tried to set it up so that dependencies are properly handled via the MSI infrastructure, but if anything goes wrong, please screenshot the error and contact me (Peter Falb; falb0011@umn.edu). When you run the actual pipeline script, it will check again to make sure all packages are installed, and attempt to install them if they aren't.
@@ -55,6 +55,40 @@ This script does 4 things: *FIRST* it records the path to the pipeline and promp
 **NOTE: It may take 10-15 minutes to install the necessary packages**
 
 After proper installation, the ASV to OTU pipeline should now be ready to go.
+
+## Updating the Pipeline:
+
+As improvements and bug fixes are made to the pipeline, you can easily update your local installation using git. From your pipeline directory, simply run:
+
+```bash
+cd ~/your/path/to/HTS_ASV2OTU
+git pull
+```
+
+This will download the latest version and update all pipeline scripts.
+
+**If git pull gives you errors:**
+
+If you encounter git-related errors when trying to pull updates (e.g., merge conflicts, local changes preventing pull), the simplest solution is to delete the pipeline folder and re-clone:
+
+```bash
+# Navigate to the parent directory
+cd ~/your/path/to/
+rm -rf HTS_ASV2OTU
+
+# Re-clone the repository
+git clone https://github.com/peterhfalb/HTS_ASV2OTU.git
+
+# Navigate into the cloned repository
+cd HTS_ASV2OTU
+
+# Re-run setup to ensure everything is configured
+bash setup.sh
+# Type your email when prompted for SLURM notifications
+# Then run: source ~/.bash_profile
+```
+
+Your `run_asv2otu` command and conda environment will be reconfigured and ready to use.
 
 ## Usage Instructions:
 
