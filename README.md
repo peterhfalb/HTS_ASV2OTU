@@ -106,9 +106,11 @@ To run the script, ssh login to the cluster and run `run_asv2otu` from anywhere 
 
 Expect a runtime of 10-45 minutes. It should not go much longer than that, but the SLURM script requests 2 hours of time on the cluster just in case.
 
-*ITSx is a program which removes the highly conserved regions flanking the ITS variable region. ITS primers often pick up these conserved regions, which can artificially inflate the sequence similarity (clustering) between different ITS ASVs. The pipeline will automatically run ITSx for ITS primer sets, but if you prefer to NOT run this step, add the flag --skip_itsx*
+*ITSx is a program which removes the highly conserved regions flanking the ITS variable region. ITS primers often pick up these conserved regions, which can artificially inflate the sequence similarity (clustering) between different ITS ASVs. The pipeline will automatically run ITSx for ITS primer sets.*
 
-*NOTE: recent testing has shown that ITSx seems to remove the synmock ASVs used by the Kennedy lab for the positive control. If using an ITS dataset with a synmock community, you may want to skip the ITSx step*
+**Handling synthetic mock communities (synmock):** By default, the pipeline automatically recovers standard synmock sequences (synmock_1 through synmock_12) that ITSx filters out, since it cannot identify them as natural ITS regions. This keeps the benefits of ITSx's region extraction while preserving your positive control.
+
+If you want to disable synmock recovery (e.g., if using a custom mock community), use the `--skip-mock-community` flag. Alternatively, if you want to skip ITSx entirely and preserve the full ITS region, use `--skip-itsx`.*
 
 *Additionally, please avoid using taxonomic ranking names (e.g. Class, Order, etc.) as sample names in the input ASV table, as this will screw up the column filtering code*
 
@@ -118,7 +120,7 @@ Expect a runtime of 10-45 minutes. It should not go much longer than that, but t
 ssh -Y yourMSIusername@agate.msi.umn.edu 
 
 # submit the slurm job with the following command (run from anywhere):
-run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter]
+run_asv2otu <project_dir> <asv_table_path> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter] [--skip-mock-community]
 
 # PRIMER SET OPTIONS:
 #   ITS1       — fungal ITS1 region (UNITE database, ITSx optional)

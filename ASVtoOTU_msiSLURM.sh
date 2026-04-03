@@ -73,12 +73,13 @@ export PATH=$HOME/packages:$PATH
 # ------------------------------------------------------------------------------
 
 if [ "$#" -lt 4 ]; then
-    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter]"
+    echo "Usage: run_asv2otu <project_dir> <asv_table> <proj_name> <primer_set> [--skip-itsx] [--db <database>] [--skip-amf-filter] [--skip-mock-community]"
     echo ""
     echo "  primer_set options: ITS1, ITS2, 16S-V4, 18S-V4, 18S-AMF"
     echo "  --db options:       UNITE, SILVA, PR2, Maarjam, EukaryomeITS, EukaryomeSSU"
     echo "  --skip-itsx:        skip ITSx extraction (ITS1/ITS2 only)"
     echo "  --skip-amf-filter:  skip dual-assignment AMF filtering (18S-AMF only)"
+    echo "  --skip-mock-community: skip recovery of synthetic mock community (ITS1/ITS2 only; default is to recover)"
     exit 1
 fi
 
@@ -90,6 +91,7 @@ PRIMER_SET="$4"
 # Parse optional flags
 SKIP_ITSX=false
 SKIP_AMF_FILTER=false
+SKIP_MOCK_COMMUNITY=false
 DB_OVERRIDE=""
 
 for arg in "${@:5}"; do
@@ -100,6 +102,9 @@ for arg in "${@:5}"; do
         --skip-amf-filter)
             SKIP_AMF_FILTER=true
             ;;
+        --skip-mock-community)
+            SKIP_MOCK_COMMUNITY=true
+            ;;
         --db)
             # handled by next iteration — see below
             ;;
@@ -108,7 +113,7 @@ for arg in "${@:5}"; do
             ;;
         *)
             echo "ERROR: Unrecognized argument: '$arg'"
-            echo "       Valid optional arguments: --skip-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>, --skip-amf-filter"
+            echo "       Valid optional arguments: --skip-itsx, --db <UNITE|SILVA|PR2|Maarjam|EukaryomeITS|EukaryomeSSU>, --skip-amf-filter, --skip-mock-community"
             exit 1
             ;;
     esac
@@ -373,6 +378,24 @@ if [ "$RUN_ITSX" = true ]; then
         "$DIR_ITSX/Centroid.ITSx.${ITSX_REGION}.fasta" > "$DIR_ITSX/Centroid.ITSx.${ITSX_REGION}.filtered.fasta"
 
     TMP_INPUT="$DIR_ITSX/Centroid.ITSx.${ITSX_REGION}.filtered.fasta"
+
+    # Recover synthetic mock community (default behavior, can be skipped with --skip-mock-community)
+    if [ "$SKIP_MOCK_COMMUNITY" = false ]; then
+        plog "  Recovering synthetic mock community sequences from ITSx..."
+        SYNMOCK_PATH="$PIPELINE_DIR/back_ground_scripts/synmock.fasta"
+        NO_DETECTIONS="$DIR_ITSX/Centroid.ITSx.no_detections.fasta"
+        if [ -f "$NO_DETECTIONS" ]; then
+            "$PIPELINE_DIR/back_ground_scripts/recover_synmock_from_itsx.sh" \
+                "$SYNMOCK_PATH" \
+                "$TMP_INPUT" \
+                "$NO_DETECTIONS" \
+                "$TMP_INPUT"
+        else
+            plog "  WARNING: ITSx no_detections file not found. Skipping synmock recovery."
+        fi
+    else
+        plog "  Skipping synthetic mock community recovery (--skip-mock-community flag set)"
+    fi
 
     cat > "$DIR_ITSX/README.txt" << README
 ITSx Extraction Files

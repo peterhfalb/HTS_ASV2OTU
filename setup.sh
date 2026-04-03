@@ -64,25 +64,31 @@ REQUIRED ARGUMENTS:
                     18S-AMF   arbuscular mycorrhizal fungi 18S
 
 OPTIONS:
-  --skip-itsx       Skip ITSx extraction (ITS1/ITS2 only)
-                    Use this if your dataset includes synthetic mock community
-                    members that ITSx may incorrectly remove
-  --db <name>       Override the default taxonomy database. Options:
-                      UNITE        fungal ITS (default for ITS1/ITS2)
-                      SILVA        bacterial 16S (default for 16S-V4)
-                      PR2          eukaryote 18S (default for 18S-V4)
-                      Maarjam      AMF 18S (default for 18S-AMF)
-                      EukaryomeITS broader eukaryote ITS coverage
-                      EukaryomeSSU broader eukaryote 18S coverage
-  --skip-amf-filter Skip SILVA-based Mucoromycota filtering (18S-AMF only)
-                    By default, 18S-AMF datasets are filtered to retain only
-                    sequences validated as Mucoromycota using SILVA. Use this
-                    flag to skip filtering and keep all MaarjAM assignments.
-  -h, --help        Show this help message and exit
+  --skip-itsx              Skip ITSx extraction (ITS1/ITS2 only)
+                           Use this if your dataset includes synthetic mock community
+                           members that ITSx cannot process
+  --skip-mock-community    Skip recovery of synthetic mock community (ITS1/ITS2 only)
+                           By default, the pipeline automatically recovers standard
+                           synmock sequences (synmock_1 through synmock_12) that
+                           ITSx filters out. Use this flag to disable recovery.
+  --db <name>              Override the default taxonomy database. Options:
+                             UNITE        fungal ITS (default for ITS1/ITS2)
+                             SILVA        bacterial 16S (default for 16S-V4)
+                             PR2          eukaryote 18S (default for 18S-V4)
+                             Maarjam      AMF 18S (default for 18S-AMF)
+                             EukaryomeITS broader eukaryote ITS coverage
+                             EukaryomeSSU broader eukaryote 18S coverage
+  --skip-amf-filter        Skip SILVA-based Mucoromycota filtering (18S-AMF only)
+                           By default, 18S-AMF datasets are filtered to retain only
+                           sequences validated as Mucoromycota using SILVA. Use this
+                           flag to skip filtering and keep all MaarjAM assignments.
+  -h, --help               Show this help message and exit
 
 EXAMPLES:
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 16S-V4
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2 --skip-itsx
+  run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 ITS2 --skip-mock-community
   run_asv2otu /path/to/project /path/to/ASVtable.tsv FAB2 18S-V4 --db EukaryomeSSU
   run_asv2otu /path/to/project /path/to/ASVtable.tsv AMF_data 18S-AMF
   run_asv2otu /path/to/project /path/to/ASVtable.tsv AMF_data 18S-AMF --skip-amf-filter
